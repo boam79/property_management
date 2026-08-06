@@ -43,6 +43,27 @@ next-env.d.ts
 
 # local tooling / deploy artifacts
 .deploy-files.json
+.deploy-*.json
+.deploy-*
+.make-*.js
+.call-*.js
+.chunk-*.js
+.compact-*.js
+.fix-*.js
+.add-*.js
+.deps-*.js
+.minify-*.js
+.patch-*.js
+.prepare-*.js
+.reduce-*.js
+.restore-*.js
+.shrink-*.js
+.slim-*.js
+.split-*.js
 supabase/migrations/part*.sql
 supabase/migrations/*.b64
 SEED.md
+e2e-results/
+test-results/
+playwright-report/
+.tmp-sqlite/
