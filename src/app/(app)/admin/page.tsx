@@ -103,21 +103,19 @@ export default async function AdminDashboardPage({
   const recent = (stats.recent ?? []) as Asset[];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">관리자 대시보드</h1>
-        <p className="text-sm text-muted-foreground">
-          자산 현황 요약 · 필터는 카드·차트·표에 공통 적용
-        </p>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-lg font-semibold">관리자 대시보드</h1>
+          <p className="text-xs text-muted-foreground">
+            자산 현황 요약 · 필터는 카드·차트·표에 공통 적용
+          </p>
+        </div>
       </div>
 
       <Card size="sm">
-        <CardHeader className="border-b">
-          <CardTitle>필터</CardTitle>
-          <CardDescription>선택한 조건이 아래 카드·차트·표에 공통 적용됩니다</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-3 sm:grid-cols-4">
+        <CardContent className="pt-(--card-spacing)">
+          <form className="grid gap-2 sm:grid-cols-4 sm:items-end">
             <div className="space-y-1">
               <Label htmlFor="asset_type">구분</Label>
               <select
@@ -159,11 +157,13 @@ export default async function AdminDashboardPage({
                 placeholder="위치 또는 미지정"
               />
             </div>
-            <div className="flex items-end gap-2">
-              <Button type="submit">적용</Button>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1 sm:flex-none">
+                적용
+              </Button>
               <Link
                 href="/admin"
-                className={cn(buttonVariants({ variant: "outline" }))}
+                className={cn(buttonVariants({ variant: "outline" }), "flex-1 sm:flex-none")}
               >
                 전체 초기화
               </Link>
@@ -188,16 +188,16 @@ export default async function AdminDashboardPage({
         </Card>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
           <Link key={c.title} href={c.href} className="group block">
             <Card
               size="sm"
               className="h-full transition group-hover:ring-foreground/25"
             >
-              <CardHeader>
-                <CardDescription>{c.title}</CardDescription>
-                <CardTitle className="text-2xl font-semibold tabular-nums">
+              <CardHeader className="gap-0.5">
+                <CardDescription className="text-xs">{c.title}</CardDescription>
+                <CardTitle className="text-xl font-semibold tabular-nums">
                   {c.value}
                 </CardTitle>
               </CardHeader>
@@ -209,10 +209,10 @@ export default async function AdminDashboardPage({
       <DashboardCharts stats={stats} />
 
       <Card size="sm">
-        <CardHeader className="border-b">
+        <CardHeader className="border-b py-2">
           <CardTitle>최근 등록 자산</CardTitle>
         </CardHeader>
-        <CardContent className="px-0">
+        <CardContent className="max-h-44 overflow-auto px-0 py-0">
           <Table>
             <TableHeader>
               <TableRow>
