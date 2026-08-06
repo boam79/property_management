@@ -2,43 +2,39 @@
 
 ## Background and Motivation
 
-QR 자산관리 MVP 고도화. 사용자 지시: Planner 제안 후 **Executor로 모두 진행**.
+QR 자산관리 MVP 고도화. Executor가 P0→P1→P2까지 연속 구현.
 
 ## Key Challenges and Analysis
 
-(이전 Planner 분석 유지) P0/P1 구현 완료. P2(일괄변경·PWA·알림)·P3는 후순위.
-
-**필수 운영 작업:** Supabase에 `20260806150000_enhancements.sql` 적용 전까지 사진·unlink/retire·역할 UI RPC가 실패합니다.
-
-## High-level Task Breakdown
-
-P0-1~P0-4, P1-1~P1-4 완료. P2 일부: 수리/폐기 시 비고 필수만 반영.
+**필수:** Supabase에 `20260806150000_enhancements.sql` + `20260806160000_p2_bulk_update.sql` 적용.
 
 ## Project Status Board
 
-- [x] P0-1 ~ P1-4 (이전)
-- [ ] P2-1 이관 워크플로 (담당자·부서·위치 + 사유)
-- [ ] P2-2 자산 일괄 상태/위치 변경
-- [ ] P2-3 앱내 QR 스캐너 (+ 설치용 manifest)
-- [ ] P2-4 대시보드 알림 배지
-- [ ] 커밋·푸시·PR 업데이트
-- [ ] 사용자: Supabase 마이그레이션 적용 (150000 + 160000)
-- [ ] 사용자: 배포 URL 검증
+- [x] P0-1 ~ P1-4
+- [x] P2-1 이관 워크플로
+- [x] P2-2 일괄 상태/위치/부서 변경
+- [x] P2-3 앱내 QR 스캐너 + PWA manifest
+- [x] P2-4 대시보드 알림
+- [ ] **사용자: Supabase 마이그레이션 적용 (150000 + 160000)**
+- [ ] **사용자: 배포 URL 검증 / E2E**
+- [ ] Planner: 완료 확정
+- [ ] (후순위) P3 멀티테넌시·감가상각 등
 
 ## Current Status / Progress Tracking
 
 - 모드: **Executor**
-- 사용자 지시: **계속 진행** → P2 착수
-- 브랜치: `cursor/assets-list-pagination-ad17`
+- 브랜치/PR: `cursor/assets-list-pagination-ad17` / #1
+- 로컬: pagination/export/qr-token/no-stub/lint/tsc PASS
 
 ## Executor's Feedback or Assistance Requests
 
-- P2 구현 중. 완료 후 마이그레이션 적용·배포 검증 요청 예정.
+1. Supabase에 두 마이그레이션 적용
+2. 배포 후 `/scan`, 자산목록 일괄변경, 대시보드 알림, 자산상세 이관 확인
+3. P3 필요 여부 지시
 
 ## Lessons
 
-- E2E/스모크는 배포 HTTPS URL만.
-- ADMIN 역할 self-escalation 금지; `admin_set_profile_role` + 트리거가 **타인만** 허용하도록 완화.
-- `xlsx` npm audit high — fix 없음, 임포트/익스포트에만 사용.
-- 「모두 진행」지시 시 Executor는 검증 대기 없이 P0/P1 연속 구현.
-- Supabase MCP 미인증 시 마이그레이션은 사용자 적용 필요.
+- E2E는 배포 HTTPS URL만.
+- html5-qrcode는 클라이언트 전용; 수동 토큰 입력 폴백 유지.
+- bulk_update는 ADMIN RPC, 수리·폐기 시 reason 필수.
+- 「계속 진행」→ P2 착수.
