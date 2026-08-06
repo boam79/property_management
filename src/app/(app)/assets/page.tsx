@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
+  ASSETS_PAGE_SIZE,
+  assetsRange,
+  assetsTotalPages,
+  buildAssetsListHref,
+  parseAssetsPage,
+  type AssetsListParams,
+} from "@/lib/assets-list";
+import {
   ASSET_STATUS_LABELS,
   ASSET_STATUSES,
   ASSET_TYPE_LABELS,
@@ -29,16 +37,19 @@ export default async function AssetsPage({
     status?: string;
     location?: string;
     unlinked?: string;
+    page?: string;
   }>;
 }) {
-  const params = await searchParams;
+  const params = (await searchParams) as AssetsListParams;
+  const page = parseAssetsPage(params.page);
+  const { from, to } = assetsRange(page);
   const supabase = await createClient();
 
   let query = supabase
     .from("assets")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(200);
+    .range(from, to);
 
   if (params.asset_type) {
     query = query.eq("asset_type", params.asset_type);
@@ -63,11 +74,18 @@ export default async function AssetsPage({
     );
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) {
-    console.error("[assets list]", error.message);
+    console.error("[assets list]", error.message, { page, from, to });
   }
   const assets = (data ?? []) as Asset[];
+  const totalCount = count ?? 0;
+  const totalPages = assetsTotalPages(totalCount);
+  // Past-last-page visits still show empty rows; clamp label/nav to last page
+  const displayPage = page > totalPages ? totalPages : page;
+  const displayFrom = (displayPage - 1) * ASSETS_PAGE_SIZE;
+  const rangeStart = totalCount === 0 ? 0 : displayFrom + 1;
+  const rangeEnd = Math.min(displayFrom + ASSETS_PAGE_SIZE, totalCount);
 
   return (
     <div className="space-y-6">
@@ -132,6 +150,8 @@ export default async function AssetsPage({
         {params.unlinked === "1" ? (
           <input type="hidden" name="unlinked" value="1" />
         ) : null}
+        {/* 필터 적용 시 1페이지로 */}
+        <input type="hidden" name="page" value="1" />
         <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
           <Button type="submit">적용</Button>
           <Link href="/assets" className={cn(buttonVariants({ variant: "outline" }))}>
@@ -141,8 +161,23 @@ export default async function AssetsPage({
       </form>
 
       {error ? (
-        <p className="text-sm text-destructive">목록을 불러오지 못했습니다: {error.message}</p>
+        <p className="text-sm text-destructive">
+          목록을 불러오지 못했습니다: {error.message}
+        </p>
       ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+        <p data-testid="assets-total">
+          전체 <span className="font-medium text-foreground">{totalCount}</span>건
+          {totalCount > 0 ? (
+            <>
+              {" "}
+              · {rangeStart}–{rangeEnd} 표시 (페이지 {displayPage}/{totalPages},{" "}
+              {ASSETS_PAGE_SIZE}건씩)
+            </>
+          ) : null}
+        </p>
+      </div>
 
       <div className="rounded-xl bg-card ring-1 ring-foreground/10">
         <Table>
@@ -185,6 +220,58 @@ export default async function AssetsPage({
           </TableBody>
         </Table>
       </div>
+
+      <nav
+        className="flex flex-wrap items-center justify-between gap-2"
+        aria-label="자산 목록 페이지"
+        data-testid="assets-pagination"
+      >
+        {displayPage > 1 ? (
+          <Link
+            href={buildAssetsListHref(params, { page: String(displayPage - 1) })}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            data-testid="assets-prev"
+          >
+            이전
+          </Link>
+        ) : (
+          <span
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "pointer-events-none opacity-40"
+            )}
+            aria-disabled="true"
+            data-testid="assets-prev-disabled"
+          >
+            이전
+          </span>
+        )}
+
+        <span className="text-sm text-muted-foreground" data-testid="assets-page-label">
+          {displayPage} / {totalPages}
+        </span>
+
+        {displayPage < totalPages ? (
+          <Link
+            href={buildAssetsListHref(params, { page: String(displayPage + 1) })}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            data-testid="assets-next"
+          >
+            다음
+          </Link>
+        ) : (
+          <span
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "pointer-events-none opacity-40"
+            )}
+            aria-disabled="true"
+            data-testid="assets-next-disabled"
+          >
+            다음
+          </span>
+        )}
+      </nav>
     </div>
   );
 }

@@ -129,7 +129,7 @@ test.describe("관리자 E2E", () => {
     expect(page.url()).toContain("/admin/link-qr");
   });
 
-  test("자산목록 접근", async ({ page }) => {
+  test("자산목록 접근·페이지네이션 UI", async ({ page }) => {
     await loginAsAdmin(page);
     await page.getByRole("link", { name: "자산목록" }).click();
     await page.waitForURL(/\/assets/);
@@ -138,5 +138,26 @@ test.describe("관리자 E2E", () => {
       fullPage: true,
     });
     await expect(page.getByRole("link", { name: "대시보드" })).toBeVisible();
+    await expect(page.getByTestId("assets-total")).toBeVisible();
+    await expect(page.getByTestId("assets-pagination")).toBeVisible();
+    await expect(page.getByTestId("assets-page-label")).toBeVisible();
+
+    const totalText = await page.getByTestId("assets-total").innerText();
+    const next = page.getByTestId("assets-next");
+    if (await next.count()) {
+      await next.click();
+      await page.waitForURL(/page=2/);
+      await expect(page.getByTestId("assets-page-label")).toContainText("2 /");
+      await expect(page.getByTestId("assets-prev")).toBeVisible();
+    } else {
+      await expect(page.getByTestId("assets-next-disabled")).toBeVisible();
+      await expect(page.getByTestId("assets-prev-disabled")).toBeVisible();
+    }
+
+    fs.writeFileSync(
+      path.join(OUT_DIR, "06-assets-pagination.json"),
+      JSON.stringify({ totalText, url: page.url() }, null, 2),
+      "utf8"
+    );
   });
 });
