@@ -10,23 +10,14 @@ import {
   type AssetsListParams,
 } from "@/lib/assets-list";
 import {
-  ASSET_STATUS_LABELS,
   ASSET_STATUSES,
-  ASSET_TYPE_LABELS,
   ASSET_TYPES,
 } from "@/lib/constants";
 import type { Asset } from "@/lib/types";
+import { AssetsTableWithBulk } from "@/components/assets-table-with-bulk";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 export default async function AssetsPage({
@@ -198,47 +189,7 @@ export default async function AssetsPage({
         ) : null}
       </div>
 
-      <div className="rounded-xl bg-card ring-1 ring-foreground/10">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>자산번호</TableHead>
-              <TableHead>자산명</TableHead>
-              <TableHead>구분</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>위치</TableHead>
-              <TableHead>QR</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {assets.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  등록된 자산이 없습니다.
-                </TableCell>
-              </TableRow>
-            ) : (
-              assets.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
-                    <Link
-                      href={`/assets/${a.id}`}
-                      className="font-medium text-primary underline-offset-4 hover:underline"
-                    >
-                      {a.asset_no}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{a.name}</TableCell>
-                  <TableCell>{ASSET_TYPE_LABELS[a.asset_type]}</TableCell>
-                  <TableCell>{ASSET_STATUS_LABELS[a.status]}</TableCell>
-                  <TableCell>{a.location || "미지정"}</TableCell>
-                  <TableCell>{a.qr_code_id ? "연결" : "미연결"}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <AssetsTableWithBulk assets={assets} enableBulk={!!isAdmin} />
 
       <nav
         className="flex flex-wrap items-center justify-between gap-2"

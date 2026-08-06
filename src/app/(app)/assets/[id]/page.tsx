@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AssetEditForm } from "@/components/asset-edit-form";
 import { AssetPhotosPanel } from "@/components/asset-photos-panel";
+import { AssetTransferForm } from "@/components/asset-transfer-form";
 import {
   RetireQrButton,
   UnlinkQrButton,
@@ -138,6 +139,17 @@ export default async function AssetDetailPage({
           assetId={(asset as Asset).id}
           photos={photos}
           signedUrls={signedUrls}
+        />
+      </div>
+
+      <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+        <h2 className="mb-4 text-sm font-medium">이관</h2>
+        <AssetTransferForm
+          asset={asset as Asset}
+          suggestions={{
+            locations: suggestions.locations,
+            departments: suggestions.departments,
+          }}
         />
       </div>
 

@@ -12,7 +12,10 @@ QR 라벨을 미리 생성·부착한 뒤, 스캔으로 일반 비품·IT 자산
 | 자산 | 목록(페이지네이션·검색·필터), 상세 수정, 사진, 변경 이력 |
 | 내보내기 | 현재 필터 기준 Excel/CSV (임포트 헤더 호환) |
 | 임포트 | xlsx 템플릿·검증·커밋 |
-| 관리 | 대시보드, QR연결, 사용자 역할, 감사로그 |
+| QR 스캔 | `/scan` 앱내 카메라 스캔 + 수동 입력, PWA manifest |
+| 이관 | 자산 상세에서 담당자·부서·위치 이관(사유 필수) |
+| 일괄 변경 | 관리자 자산목록에서 상태·위치·부서 일괄 적용 |
+| 알림 | 대시보드: 장기 수리·미사용 QR 부족·미연결 자산 |
 
 역할: `REGISTER`(등록/조회) · `ADMIN`(전체 관리). 신규 가입은 항상 `REGISTER`입니다.
 
@@ -49,6 +52,7 @@ npm run dev
 2. `20260806130000_security_hardening.sql` — 권한 강화
 3. `20260806140000_import_storage_cleanup.sql` — imports 버킷
 4. `20260806150000_enhancements.sql` — QR unlink/retire, 사진, 역할 RPC
+5. `20260806160000_p2_bulk_update.sql` — 일괄 변경 RPC
 
 Supabase SQL Editor에 붙여 넣거나 CLI로 push합니다. **ADMIN 승격**은 초기 1회 SQL로 하거나, 승격 후 앱의 **사용자** 메뉴를 사용합니다.
 
@@ -72,6 +76,7 @@ Production URL 예: `https://property-management-eight-rouge.vercel.app`
 ```bash
 npm run test:assets-pagination
 npm run test:assets-export
+npm run test:qr-token
 npm run check:no-stub
 
 PLAYWRIGHT_BASE_URL=https://property-management-eight-rouge.vercel.app npm run test:e2e:admin

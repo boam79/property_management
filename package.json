@@ -14,8 +14,8 @@
     "test:dashboard-counts": "node --env-file=.env.local scripts/dashboard-count-check.mjs",
     "test:assets-pagination": "node scripts/assets-list-pagination-check.mjs",
     "test:assets-export": "node scripts/assets-export-check.mjs",
+    "test:qr-token": "node scripts/qr-token-check.mjs",
     "check:no-stub": "node scripts/check-no-stub.mjs"
-
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -24,6 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.28.0",
     "next": "16.3.0",
     "next-themes": "^0.4.6",

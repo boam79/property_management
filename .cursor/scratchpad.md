@@ -16,32 +16,24 @@ P0-1~P0-4, P1-1~P1-4 완료. P2 일부: 수리/폐기 시 비고 필수만 반�
 
 ## Project Status Board
 
-- [x] P0-1 자산 목록 페이지네이션
-- [x] P0-2 자산 Excel/CSV 내보내기
-- [x] P0-3 QR 폐기/연결 해제
-- [x] P0-4 운영 README
-- [x] P1-1 사진 첨부
-- [x] P1-2 위치·부서·카테고리 자동완성(datalist)
-- [x] P1-3 자산 변경 이력(audit asset.update)
-- [x] P1-4 사용자/역할 관리 UI
-- [x] (경량) 수리·폐기 시 비고 필수
-- [ ] **사용자: Supabase 마이그레이션 적용**
-- [ ] **사용자: 배포 URL 수동/E2E 검증**
-- [ ] Planner: 전체 완료 확정
-- [ ] (후순위) P2 일괄변경·PWA·알림 / P3
+- [x] P0-1 ~ P1-4 (이전)
+- [ ] P2-1 이관 워크플로 (담당자·부서·위치 + 사유)
+- [ ] P2-2 자산 일괄 상태/위치 변경
+- [ ] P2-3 앱내 QR 스캐너 (+ 설치용 manifest)
+- [ ] P2-4 대시보드 알림 배지
+- [ ] 커밋·푸시·PR 업데이트
+- [ ] 사용자: Supabase 마이그레이션 적용 (150000 + 160000)
+- [ ] 사용자: 배포 URL 검증
 
 ## Current Status / Progress Tracking
 
 - 모드: **Executor**
-- 브랜치/PR: `cursor/assets-list-pagination-ad17` / https://github.com/boam79/property_management/pull/1
-- 로컬: `test:assets-pagination`, `test:assets-export`, `check:no-stub`, lint PASS
-- Supabase MCP: needsAuth — 에이전트가 원격 마이그레이션 적용 불가
+- 사용자 지시: **계속 진행** → P2 착수
+- 브랜치: `cursor/assets-list-pagination-ad17`
 
 ## Executor's Feedback or Assistance Requests
 
-1. **Supabase SQL Editor**에서 `supabase/migrations/20260806150000_enhancements.sql` 실행 부탁드립니다.
-2. Vercel Preview/Production 배포 후 `/assets` 페이지네이션·내보내기, `/admin/qr` 해제·폐기, `/admin/users`, 자산 상세 사진·이력 확인.
-3. P2(일괄·PWA·알림) 계속 진행 여부 지시 부탁드립니다.
+- P2 구현 중. 완료 후 마이그레이션 적용·배포 검증 요청 예정.
 
 ## Lessons
 

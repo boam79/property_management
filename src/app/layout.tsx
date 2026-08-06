@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "QR 자산관리",
   description: "QR 기반 일반 비품·IT 자산관리 MVP",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "QR자산",
+  },
+  themeColor: "#18181b",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

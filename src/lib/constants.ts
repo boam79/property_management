@@ -61,3 +61,8 @@ export const EXPORT_HEADERS = [
 
 export const ASSET_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 export const ASSET_PHOTO_MAX_PER_ASSET = 10;
+
+/** 수리 중 자산이 이 일수 이상 갱신 없으면 대시보드 알림 */
+export const REPAIR_STALE_DAYS = 14;
+/** 미사용 QR 재고가 이 값 미만이면 대시보드 알림 */
+export const UNUSED_QR_LOW_THRESHOLD = 20;

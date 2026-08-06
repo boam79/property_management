@@ -7,6 +7,8 @@ import {
   ASSET_STATUSES,
   ASSET_TYPE_LABELS,
   ASSET_TYPES,
+  REPAIR_STALE_DAYS,
+  UNUSED_QR_LOW_THRESHOLD,
 } from "@/lib/constants";
 import type { Asset, DashboardStats } from "@/lib/types";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -60,6 +62,50 @@ export default async function AdminDashboardPage({
     recent: [],
   }) as DashboardStats;
 
+  const staleBefore = new Date();
+  staleBefore.setDate(staleBefore.getDate() - REPAIR_STALE_DAYS);
+  const staleIso = staleBefore.toISOString();
+
+  const [{ count: staleRepairCount }, { count: unusedQrCount }] =
+    await Promise.all([
+      supabase
+        .from("assets")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "REPAIR")
+        .lt("updated_at", staleIso),
+      supabase
+        .from("qr_codes")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "unused"),
+    ]);
+
+  const alerts: { id: string; title: string; detail: string; href: string }[] =
+    [];
+  if ((staleRepairCount ?? 0) > 0) {
+    alerts.push({
+      id: "stale-repair",
+      title: "장기 수리",
+      detail: `${REPAIR_STALE_DAYS}일 이상 수리 중 ${staleRepairCount}건`,
+      href: "/assets?status=REPAIR",
+    });
+  }
+  if ((unusedQrCount ?? 0) < UNUSED_QR_LOW_THRESHOLD) {
+    alerts.push({
+      id: "low-unused-qr",
+      title: "미사용 QR 부족",
+      detail: `미사용 QR ${unusedQrCount ?? 0}개 (기준 ${UNUSED_QR_LOW_THRESHOLD})`,
+      href: "/admin/qr",
+    });
+  }
+  if ((stats.unlinked_qr_count ?? 0) > 0) {
+    alerts.push({
+      id: "unlinked-assets",
+      title: "QR 미연결 자산",
+      detail: `${stats.unlinked_qr_count}건`,
+      href: "/assets?unlinked=1",
+    });
+  }
+
   const cards = [
     {
       title: "전체 자산",
@@ -103,6 +149,33 @@ export default async function AdminDashboardPage({
           자산 현황 요약 · 필터는 카드·차트·표에 공통 적용
         </p>
       </div>
+
+      {alerts.length > 0 ? (
+        <div
+          className="space-y-2 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200"
+          data-testid="dashboard-alerts"
+        >
+          <p className="text-sm font-medium text-amber-950">알림</p>
+          <ul className="space-y-1">
+            {alerts.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={a.href}
+                  className="text-sm text-amber-900 underline-offset-4 hover:underline"
+                >
+                  <span className="font-medium">{a.title}</span>
+                  {" — "}
+                  {a.detail}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground" data-testid="dashboard-alerts-empty">
+          주의 알림 없음 (장기 수리 · QR 재고 · 미연결)
+        </p>
+      )}
 
       <form className="grid gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10 sm:grid-cols-4">
         <div className="space-y-1">
