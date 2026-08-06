@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   ASSETS_PAGE_SIZE,
@@ -43,6 +44,8 @@ export default async function AssetsPage({
   const params = (await searchParams) as AssetsListParams;
   const page = parseAssetsPage(params.page);
   const { from, to } = assetsRange(page);
+  const current = await getCurrentProfile();
+  const isAdmin = current?.profile.role === "ADMIN";
   const supabase = await createClient();
 
   let query = supabase
@@ -177,6 +180,22 @@ export default async function AssetsPage({
             </>
           ) : null}
         </p>
+        {isAdmin ? (
+          <div className="flex flex-wrap gap-2" data-testid="assets-export">
+            <a
+              href={buildExportHref(params, "xlsx")}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Excel 내보내기
+            </a>
+            <a
+              href={buildExportHref(params, "csv")}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              CSV 내보내기
+            </a>
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-xl bg-card ring-1 ring-foreground/10">
@@ -274,4 +293,18 @@ export default async function AssetsPage({
       </nav>
     </div>
   );
+}
+
+function buildExportHref(
+  params: AssetsListParams,
+  format: "xlsx" | "csv"
+): string {
+  const q = new URLSearchParams();
+  q.set("format", format);
+  if (params.q?.trim()) q.set("q", params.q.trim());
+  if (params.asset_type) q.set("asset_type", params.asset_type);
+  if (params.status) q.set("status", params.status);
+  if (params.location) q.set("location", params.location);
+  if (params.unlinked === "1") q.set("unlinked", "1");
+  return `/api/admin/assets/export?${q.toString()}`;
 }

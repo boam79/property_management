@@ -86,3 +86,23 @@ export interface AssignQrResult {
   asset_id?: string;
   existing_asset_id?: string;
 }
+
+export interface AuditLog {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface AssetPhoto {
+  id: string;
+  asset_id: string;
+  storage_path: string;
+  file_name: string | null;
+  content_type: string | null;
+  created_by: string | null;
+  created_at: string;
+}

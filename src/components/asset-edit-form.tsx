@@ -14,7 +14,17 @@ import { Textarea } from "@/components/ui/textarea";
 
 const initial: UpdateAssetState = { ok: false };
 
-export function AssetEditForm({ asset }: { asset: Asset }) {
+export function AssetEditForm({
+  asset,
+  suggestions,
+}: {
+  asset: Asset;
+  suggestions?: {
+    categories: string[];
+    locations: string[];
+    departments: string[];
+  };
+}) {
   const [state, action, pending] = useActionState(updateAsset, initial);
 
   return (
@@ -41,7 +51,13 @@ export function AssetEditForm({ asset }: { asset: Asset }) {
         </select>
       </div>
 
-      <Field label="카테고리" name="category" defaultValue={asset.category} required />
+      <Field
+        label="카테고리"
+        name="category"
+        defaultValue={asset.category}
+        required
+        listId="suggest-category"
+      />
 
       <div className="space-y-1">
         <Label htmlFor="status">상태</Label>
@@ -63,8 +79,18 @@ export function AssetEditForm({ asset }: { asset: Asset }) {
       <Field label="시리얼번호" name="serial_no" defaultValue={asset.serial_no ?? ""} />
       <Field label="제조사" name="manufacturer" defaultValue={asset.manufacturer ?? ""} />
       <Field label="모델명" name="model_name" defaultValue={asset.model_name ?? ""} />
-      <Field label="위치" name="location" defaultValue={asset.location ?? ""} />
-      <Field label="사용부서" name="department" defaultValue={asset.department ?? ""} />
+      <Field
+        label="위치"
+        name="location"
+        defaultValue={asset.location ?? ""}
+        listId="suggest-location"
+      />
+      <Field
+        label="사용부서"
+        name="department"
+        defaultValue={asset.department ?? ""}
+        listId="suggest-department"
+      />
       <Field
         label="사용자/담당자"
         name="assignee_name"
@@ -84,7 +110,7 @@ export function AssetEditForm({ asset }: { asset: Asset }) {
       />
 
       <div className="space-y-1 sm:col-span-2">
-        <Label htmlFor="notes">비고</Label>
+        <Label htmlFor="notes">비고 (수리·폐기 시 필수)</Label>
         <Textarea id="notes" name="notes" defaultValue={asset.notes ?? ""} rows={3} />
       </div>
 
@@ -102,6 +128,22 @@ export function AssetEditForm({ asset }: { asset: Asset }) {
           {pending ? "저장 중…" : "저장"}
         </Button>
       </div>
+
+      <datalist id="suggest-category">
+        {(suggestions?.categories ?? []).map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
+      <datalist id="suggest-location">
+        {(suggestions?.locations ?? []).map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
+      <datalist id="suggest-department">
+        {(suggestions?.departments ?? []).map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
     </form>
   );
 }
@@ -112,12 +154,14 @@ function Field({
   defaultValue,
   required,
   type = "text",
+  listId,
 }: {
   label: string;
   name: string;
   defaultValue: string;
   required?: boolean;
   type?: string;
+  listId?: string;
 }) {
   return (
     <div className="space-y-1">
@@ -128,6 +172,7 @@ function Field({
         type={type}
         defaultValue={defaultValue}
         required={required}
+        list={listId}
       />
     </div>
   );

@@ -13,6 +13,7 @@
     "test:concurrency": "node --env-file=.env.local scripts/concurrency-stress.mjs",
     "test:dashboard-counts": "node --env-file=.env.local scripts/dashboard-count-check.mjs",
     "test:assets-pagination": "node scripts/assets-list-pagination-check.mjs",
+    "test:assets-export": "node scripts/assets-export-check.mjs",
     "check:no-stub": "node scripts/check-no-stub.mjs"
 
   },

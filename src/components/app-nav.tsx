@@ -46,6 +46,12 @@ export function AppNav({ role }: { role: UserRole }) {
                 QR연결
               </Link>
               <Link
+                href="/admin/users"
+                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+              >
+                사용자
+              </Link>
+              <Link
                 href="/admin/audit"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
               >

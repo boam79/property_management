@@ -53,3 +53,11 @@ export const IMPORT_OPTIONAL_HEADERS = [
   "비고",
   "QR 식별값",
 ] as const;
+
+export const EXPORT_HEADERS = [
+  ...IMPORT_REQUIRED_HEADERS,
+  ...IMPORT_OPTIONAL_HEADERS,
+] as const;
+
+export const ASSET_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+export const ASSET_PHOTO_MAX_PER_ASSET = 10;

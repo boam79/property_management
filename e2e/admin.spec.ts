@@ -48,6 +48,7 @@ test.describe("관리자 E2E", () => {
     await expect(page.getByRole("link", { name: "임포트" })).toBeVisible();
     await expect(page.getByRole("link", { name: "QR연결" })).toBeVisible();
     await expect(page.getByRole("link", { name: "감사로그" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "사용자" })).toBeVisible();
   });
 
   test("대시보드 로드", async ({ page }) => {
@@ -141,6 +142,8 @@ test.describe("관리자 E2E", () => {
     await expect(page.getByTestId("assets-total")).toBeVisible();
     await expect(page.getByTestId("assets-pagination")).toBeVisible();
     await expect(page.getByTestId("assets-page-label")).toBeVisible();
+    await expect(page.getByTestId("assets-export")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Excel 내보내기" })).toBeVisible();
 
     const totalText = await page.getByTestId("assets-total").innerText();
     const next = page.getByTestId("assets-next");
@@ -159,5 +162,24 @@ test.describe("관리자 E2E", () => {
       JSON.stringify({ totalText, url: page.url() }, null, 2),
       "utf8"
     );
+  });
+
+  test("QR 수명주기·사용자 메뉴 접근", async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.getByRole("link", { name: "QR생성" }).click();
+    await page.waitForURL(/\/admin\/qr/);
+    await expect(page.getByTestId("qr-lifecycle-table")).toBeVisible();
+    await page.screenshot({
+      path: path.join(OUT_DIR, "07-qr-lifecycle.png"),
+      fullPage: true,
+    });
+
+    await page.getByRole("link", { name: "사용자" }).click();
+    await page.waitForURL(/\/admin\/users/);
+    await expect(page.getByRole("heading", { name: "사용자·역할" })).toBeVisible();
+    await page.screenshot({
+      path: path.join(OUT_DIR, "08-users.png"),
+      fullPage: true,
+    });
   });
 });
