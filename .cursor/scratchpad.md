@@ -2,39 +2,33 @@
 
 ## Background and Motivation
 
-QR 자산관리 MVP 고도화. Executor가 P0→P1→P2까지 연속 구현.
-
-## Key Challenges and Analysis
-
-**필수:** Supabase에 `20260806150000_enhancements.sql` + `20260806160000_p2_bulk_update.sql` 적용.
+고도화 P0–P2 + main 카드 대시보드 병합 완료.
 
 ## Project Status Board
 
-- [x] P0-1 ~ P1-4
-- [x] P2-1 이관 워크플로
-- [x] P2-2 일괄 상태/위치/부서 변경
-- [x] P2-3 앱내 QR 스캐너 + PWA manifest
-- [x] P2-4 대시보드 알림
-- [ ] **사용자: Supabase 마이그레이션 적용 (150000 + 160000)**
-- [ ] **사용자: 배포 URL 검증 / E2E**
-- [ ] Planner: 완료 확정
-- [ ] (후순위) P3 멀티테넌시·감가상각 등
+- [x] P0–P2 구현
+- [x] main 카드 UI와 merge
+- [x] **main 커밋·푸시** (`8c21b43`, `f9c1162`)
+- [x] 유저스토리 버그 수정 (scan auth, upload limit, history gate, revalidate, search escape, favicon)
+- [ ] **사용자: Supabase 마이그레이션 적용**
+- [ ] **사용자: Vercel Git 연동/Redeploy** (현재 main 푸시가 자동 배포를 안 탐 — E2E가 구버전에서 실패)
+- [ ] 배포 후 E2E 재실행
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor**
-- 브랜치/PR: `cursor/assets-list-pagination-ad17` / #1
-- 로컬: pagination/export/qr-token/no-stub/lint/tsc PASS
+- 브랜치: `main` @ `f9c1162`
+- 로컬: lint/tsc/unit PASS
+- 프로덕션 `property-management-eight-rouge.vercel.app`: 아직 구기능(QR스캔 등 없음) → GitHub Deployments 비어 있음
 
 ## Executor's Feedback or Assistance Requests
 
-1. Supabase에 두 마이그레이션 적용
-2. 배포 후 `/scan`, 자산목록 일괄변경, 대시보드 알림, 자산상세 이관 확인
-3. P3 필요 여부 지시
+1. Vercel Dashboard → property-management → Settings → Git 연결 확인 후 Redeploy
+2. Supabase에 `20260806150000_enhancements.sql`, `20260806160000_p2_bulk_update.sql` 적용
+3. 배포 후 `PLAYWRIGHT_BASE_URL=https://property-management-eight-rouge.vercel.app npm run test:e2e:admin` 재실행 요청
 
 ## Lessons
 
-- E2E는 배포 HTTPS URL만.
-- html5-qrcode는 클라이언트 전용; 수동 토큰 입력 폴백 유지.
-- bulk_update는 ADMIN RPC, 수리·폐기 시 reason 필수.
-- 「계속 진행」→ P2 착수.
+- main 직접 push해도 Vercel Git 미연결이면 프로덕션 미반영.
+- Next 16 `serverActions.bodySizeLimit`은 `experimental.serverActions`로 타입 통과.
+- favicon.ico Turbopack decode 실패 이력 → PNG ICO로 교체.
+- audit_logs SELECT는 ADMIN only → REGISTER에게 이력 UI 숨김.
