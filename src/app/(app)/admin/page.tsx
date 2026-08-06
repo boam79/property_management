@@ -10,6 +10,13 @@ import {
 } from "@/lib/constants";
 import type { Asset, DashboardStats } from "@/lib/types";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -96,7 +103,7 @@ export default async function AdminDashboardPage({
   const recent = (stats.recent ?? []) as Asset[];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold">관리자 대시보드</h1>
         <p className="text-sm text-muted-foreground">
@@ -104,127 +111,154 @@ export default async function AdminDashboardPage({
         </p>
       </div>
 
-      <form className="grid gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10 sm:grid-cols-4">
-        <div className="space-y-1">
-          <Label htmlFor="asset_type">구분</Label>
-          <select
-            id="asset_type"
-            name="asset_type"
-            defaultValue={params.asset_type ?? ""}
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
-          >
-            <option value="">전체</option>
-            {ASSET_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="status">상태</Label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={params.status ?? ""}
-            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
-          >
-            <option value="">전체</option>
-            {ASSET_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="location">위치</Label>
-          <Input
-            id="location"
-            name="location"
-            defaultValue={params.location ?? ""}
-            placeholder="위치 또는 미지정"
-          />
-        </div>
-        <div className="flex items-end gap-2">
-          <Button type="submit">적용</Button>
-          <Link
-            href="/admin"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            전체 초기화
-          </Link>
-        </div>
-      </form>
+      <Card size="sm">
+        <CardHeader className="border-b">
+          <CardTitle>필터</CardTitle>
+          <CardDescription>선택한 조건이 아래 카드·차트·표에 공통 적용됩니다</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="grid gap-3 sm:grid-cols-4">
+            <div className="space-y-1">
+              <Label htmlFor="asset_type">구분</Label>
+              <select
+                id="asset_type"
+                name="asset_type"
+                defaultValue={params.asset_type ?? ""}
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+              >
+                <option value="">전체</option>
+                {ASSET_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="status">상태</Label>
+              <select
+                id="status"
+                name="status"
+                defaultValue={params.status ?? ""}
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+              >
+                <option value="">전체</option>
+                {ASSET_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="location">위치</Label>
+              <Input
+                id="location"
+                name="location"
+                defaultValue={params.location ?? ""}
+                placeholder="위치 또는 미지정"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <Button type="submit">적용</Button>
+              <Link
+                href="/admin"
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                전체 초기화
+              </Link>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {error ? (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
-          <p className="text-destructive">집계를 불러오지 못했습니다: {error.message}</p>
-          <Link href="/admin" className={cn(buttonVariants({ size: "sm" }), "mt-2 inline-flex")}>
-            재시도
-          </Link>
-        </div>
+        <Card size="sm" className="border-destructive/40 bg-destructive/5 ring-destructive/30">
+          <CardContent className="pt-(--card-spacing)">
+            <p className="text-sm text-destructive">
+              집계를 불러오지 못했습니다: {error.message}
+            </p>
+            <Link
+              href="/admin"
+              className={cn(buttonVariants({ size: "sm" }), "mt-2 inline-flex")}
+            >
+              재시도
+            </Link>
+          </CardContent>
+        </Card>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
-          <Link
-            key={c.title}
-            href={c.href}
-            className="rounded-xl bg-card p-4 ring-1 ring-foreground/10 transition hover:ring-foreground/25"
-          >
-            <p className="text-sm text-muted-foreground">{c.title}</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{c.value}</p>
+          <Link key={c.title} href={c.href} className="group block">
+            <Card
+              size="sm"
+              className="h-full transition group-hover:ring-foreground/25"
+            >
+              <CardHeader>
+                <CardDescription>{c.title}</CardDescription>
+                <CardTitle className="text-2xl font-semibold tabular-nums">
+                  {c.value}
+                </CardTitle>
+              </CardHeader>
+            </Card>
           </Link>
         ))}
       </div>
 
       <DashboardCharts stats={stats} />
 
-      <div className="rounded-xl bg-card ring-1 ring-foreground/10">
-        <div className="border-b px-4 py-2 text-sm font-medium">최근 등록 자산</div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>자산번호</TableHead>
-              <TableHead>자산명</TableHead>
-              <TableHead>구분</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>위치</TableHead>
-              <TableHead>등록시각</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recent.length === 0 ? (
+      <Card size="sm">
+        <CardHeader className="border-b">
+          <CardTitle>최근 등록 자산</CardTitle>
+        </CardHeader>
+        <CardContent className="px-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  등록된 데이터가 없습니다
-                </TableCell>
+                <TableHead className="pl-4">자산번호</TableHead>
+                <TableHead>자산명</TableHead>
+                <TableHead>구분</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead>위치</TableHead>
+                <TableHead className="pr-4">등록시각</TableHead>
               </TableRow>
-            ) : (
-              recent.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
-                    <Link
-                      href={`/assets/${a.id}`}
-                      className="text-primary underline-offset-4 hover:underline"
-                    >
-                      {a.asset_no}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{a.name}</TableCell>
-                  <TableCell>{ASSET_TYPE_LABELS[a.asset_type]}</TableCell>
-                  <TableCell>{ASSET_STATUS_LABELS[a.status]}</TableCell>
-                  <TableCell>{a.location || "미지정"}</TableCell>
-                  <TableCell>
-                    {new Date(a.created_at).toLocaleString("ko-KR")}
+            </TableHeader>
+            <TableBody>
+              {recent.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground"
+                  >
+                    등록된 데이터가 없습니다
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                recent.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="pl-4">
+                      <Link
+                        href={`/assets/${a.id}`}
+                        className="text-primary underline-offset-4 hover:underline"
+                      >
+                        {a.asset_no}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{a.name}</TableCell>
+                    <TableCell>{ASSET_TYPE_LABELS[a.asset_type]}</TableCell>
+                    <TableCell>{ASSET_STATUS_LABELS[a.status]}</TableCell>
+                    <TableCell>{a.location || "미지정"}</TableCell>
+                    <TableCell className="pr-4">
+                      {new Date(a.created_at).toLocaleString("ko-KR")}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
