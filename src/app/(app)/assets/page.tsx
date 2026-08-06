@@ -18,7 +18,7 @@ import { AssetsTableWithBulk } from "@/components/assets-table-with-bulk";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn, escapeIlikePattern } from "@/lib/utils";
 
 export default async function AssetsPage({
   searchParams,
@@ -62,7 +62,7 @@ export default async function AssetsPage({
     query = query.is("qr_code_id", null);
   }
   if (params.q) {
-    const q = params.q.trim();
+    const q = escapeIlikePattern(params.q.trim());
     query = query.or(
       `asset_no.ilike.%${q}%,name.ilike.%${q}%,location.ilike.%${q}%,serial_no.ilike.%${q}%`
     );
@@ -189,7 +189,11 @@ export default async function AssetsPage({
         ) : null}
       </div>
 
-      <AssetsTableWithBulk assets={assets} enableBulk={!!isAdmin} />
+      <AssetsTableWithBulk
+        key={`assets-page-${displayPage}-${params.q ?? ""}-${params.status ?? ""}-${params.asset_type ?? ""}-${params.location ?? ""}-${params.unlinked ?? ""}`}
+        assets={assets}
+        enableBulk={!!isAdmin}
+      />
 
       <nav
         className="flex flex-wrap items-center justify-between gap-2"

@@ -38,6 +38,8 @@ export async function linkAssetToQr(
   }
 
   revalidatePath("/admin/link-qr");
+  revalidatePath("/admin");
   revalidatePath("/assets");
+  revalidatePath(`/assets/${assetId}`);
   return { ok: true, message: "QR을 연결했습니다." };
 }

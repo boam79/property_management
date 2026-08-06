@@ -34,6 +34,7 @@ export async function unlinkAssetFromQr(
 
   revalidatePath("/admin/qr");
   revalidatePath("/admin/link-qr");
+  revalidatePath("/admin");
   revalidatePath("/assets");
   revalidatePath(`/assets/${assetId}`);
   return { ok: true, message: "QR 연결을 해제했습니다. QR은 미사용으로 돌아갑니다." };
@@ -68,6 +69,7 @@ export async function retireQrCode(
 
   revalidatePath("/admin/qr");
   revalidatePath("/admin/link-qr");
+  revalidatePath("/admin");
   revalidatePath("/assets");
   if (result.asset_id) {
     revalidatePath(`/assets/${result.asset_id}`);

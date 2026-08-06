@@ -90,6 +90,7 @@ export async function transferAsset(
 
   revalidatePath(`/assets/${id}`);
   revalidatePath("/assets");
+  revalidatePath("/admin");
   revalidatePath("/admin/audit");
   return { ok: true, message: "이관이 반영되었습니다." };
 }
@@ -146,6 +147,7 @@ export async function bulkUpdateAssets(
   }
 
   revalidatePath("/assets");
+  revalidatePath("/assets", "layout");
   revalidatePath("/admin");
   revalidatePath("/admin/audit");
   return {

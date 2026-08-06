@@ -9,7 +9,9 @@ export async function proxy(request: NextRequest) {
 
   const isLogin = pathname === "/login";
   const isProtected =
-    pathname.startsWith("/assets") || pathname.startsWith("/admin");
+    pathname.startsWith("/assets") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/scan");
 
   if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone();

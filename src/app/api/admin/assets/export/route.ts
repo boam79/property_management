@@ -6,6 +6,7 @@ import {
   buildAssetsExportWorkbook,
   type ExportAssetRow,
 } from "@/lib/export-assets";
+import { escapeIlikePattern } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -47,8 +48,9 @@ export async function GET(request: Request) {
   }
   if (unlinked) query = query.is("qr_code_id", null);
   if (q) {
+    const safe = escapeIlikePattern(q);
     query = query.or(
-      `asset_no.ilike.%${q}%,name.ilike.%${q}%,location.ilike.%${q}%,serial_no.ilike.%${q}%`
+      `asset_no.ilike.%${safe}%,name.ilike.%${safe}%,location.ilike.%${safe}%,serial_no.ilike.%${safe}%`
     );
   }
 

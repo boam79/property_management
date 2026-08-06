@@ -44,7 +44,7 @@ export default async function AssetDetailPage({
     qr = data as QrCode | null;
   }
 
-  const [{ data: suggestionRows }, { data: photoRows }, { data: historyRows }] =
+  const [{ data: suggestionRows }, { data: photoRows }, historyResult] =
     await Promise.all([
       supabase
         .from("assets")
@@ -56,14 +56,18 @@ export default async function AssetDetailPage({
         .select("*")
         .eq("asset_id", id)
         .order("created_at", { ascending: false }),
-      supabase
-        .from("audit_logs")
-        .select("*")
-        .eq("entity_type", "asset")
-        .eq("entity_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50),
+      current?.profile.role === "ADMIN"
+        ? supabase
+            .from("audit_logs")
+            .select("*")
+            .eq("entity_type", "asset")
+            .eq("entity_id", id)
+            .order("created_at", { ascending: false })
+            .limit(50)
+        : Promise.resolve({ data: [] as AuditLog[] }),
     ]);
+
+  const historyRows = historyResult.data;
 
   const suggestions = {
     categories: uniqueStrings(
@@ -88,6 +92,8 @@ export default async function AssetDetailPage({
 
   const history = (historyRows ?? []) as AuditLog[];
   const isAdmin = current?.profile.role === "ADMIN";
+  // audit_logs RLS is admin-only; REGISTER would always see empty history
+  const canViewHistory = isAdmin;
 
   return (
     <div className="space-y-6">
@@ -158,31 +164,33 @@ export default async function AssetDetailPage({
         <AssetEditForm asset={asset as Asset} suggestions={suggestions} />
       </div>
 
-      <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-        <h2 className="mb-3 text-sm font-medium">변경 이력</h2>
-        {history.length === 0 ? (
-          <p className="text-sm text-muted-foreground">이력이 없습니다.</p>
-        ) : (
-          <ul className="space-y-3 text-sm" data-testid="asset-history">
-            {history.map((h) => (
-              <li
-                key={h.id}
-                className="border-b border-foreground/5 pb-2 last:border-0"
-              >
-                <div className="flex flex-wrap justify-between gap-2">
-                  <span className="font-medium">{h.action}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(h.created_at).toLocaleString("ko-KR")}
-                  </span>
-                </div>
-                <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-xs text-muted-foreground">
-                  {formatHistoryPayload(h.payload)}
-                </pre>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {canViewHistory ? (
+        <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+          <h2 className="mb-3 text-sm font-medium">변경 이력</h2>
+          {history.length === 0 ? (
+            <p className="text-sm text-muted-foreground">이력이 없습니다.</p>
+          ) : (
+            <ul className="space-y-3 text-sm" data-testid="asset-history">
+              {history.map((h) => (
+                <li
+                  key={h.id}
+                  className="border-b border-foreground/5 pb-2 last:border-0"
+                >
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="font-medium">{h.action}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(h.created_at).toLocaleString("ko-KR")}
+                    </span>
+                  </div>
+                  <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-xs text-muted-foreground">
+                    {formatHistoryPayload(h.payload)}
+                  </pre>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
