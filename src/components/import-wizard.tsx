@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
+  cleanupExpiredImports,
   commitImport,
   validateImport,
   type ImportPreviewState,
@@ -30,6 +31,8 @@ export function ImportWizard() {
     commitImport,
     initial
   );
+  const [cleanupPending, startCleanup] = useTransition();
+  const [cleanupMsg, setCleanupMsg] = useState<string | null>(null);
 
   const state = commitState.message ? commitState : validateState;
 
@@ -42,7 +45,25 @@ export function ImportWizard() {
         >
           템플릿 다운로드
         </a>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={cleanupPending}
+          onClick={() => {
+            startCleanup(async () => {
+              const res = await cleanupExpiredImports();
+              setCleanupMsg(res.message);
+            });
+          }}
+        >
+          {cleanupPending ? "정리 중…" : "만료 임포트(7일) 정리"}
+        </Button>
       </div>
+      {cleanupMsg ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          {cleanupMsg}
+        </p>
+      ) : null}
 
       <form
         action={validateAction}
@@ -67,9 +88,12 @@ export function ImportWizard() {
         </p>
       ) : null}
 
-      {validateState.errorFileBase64 ? (
+      {validateState.errorDownloadUrl || validateState.errorFileBase64 ? (
         <a
-          href={`data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${validateState.errorFileBase64}`}
+          href={
+            validateState.errorDownloadUrl ??
+            `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${validateState.errorFileBase64}`
+          }
           download="import-errors.xlsx"
           className={cn(buttonVariants({ variant: "destructive", size: "sm" }))}
         >
@@ -114,6 +138,7 @@ export function ImportWizard() {
             name="payloadBase64"
             value={validateState.payloadBase64}
           />
+          <input type="hidden" name="jobId" value={validateState.jobId ?? ""} />
           <Button type="submit" disabled={committing}>
             {committing ? "반영 중…" : "전체 반영"}
           </Button>

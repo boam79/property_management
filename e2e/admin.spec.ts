@@ -47,6 +47,7 @@ test.describe("관리자 E2E", () => {
     await expect(page.getByRole("link", { name: "QR생성" })).toBeVisible();
     await expect(page.getByRole("link", { name: "임포트" })).toBeVisible();
     await expect(page.getByRole("link", { name: "QR연결" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "감사로그" })).toBeVisible();
   });
 
   test("대시보드 로드", async ({ page }) => {

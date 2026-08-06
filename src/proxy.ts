@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { isSafeRedirectPath } from "@/lib/redirect";
 
-export async function middleware(request: NextRequest) {
+/** Next.js 16 proxy (replaces middleware convention). */
+export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
   const { pathname, search } = request.nextUrl;
 

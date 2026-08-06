@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
-    "test:e2e:admin": "playwright test e2e/admin.spec.ts"
+    "test:e2e:admin": "playwright test e2e/admin.spec.ts",
+    "test:e2e:qr": "playwright test e2e/qr-flow.spec.ts",
+    "test:concurrency": "node --env-file=.env.local scripts/concurrency-stress.mjs",
+    "test:dashboard-counts": "node --env-file=.env.local scripts/dashboard-count-check.mjs",
+    "check:no-stub": "node scripts/check-no-stub.mjs"
+
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

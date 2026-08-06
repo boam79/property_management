@@ -9,22 +9,38 @@ import {
   type NormalizedImportRow,
 } from "@/lib/import-utils";
 
+const IMPORT_BUCKET = "imports";
+
 export type ImportPreviewState = {
   ok: boolean;
   message?: string;
   preview?: NormalizedImportRow[];
   errors?: ImportRowError[];
   errorFileBase64?: string;
+  errorDownloadUrl?: string;
   payloadBase64?: string;
+  jobId?: string;
   totalRows?: number;
   validRows?: number;
 };
+
+async function uploadImportObject(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  path: string,
+  data: Buffer,
+  contentType: string
+) {
+  const { error } = await supabase.storage
+    .from(IMPORT_BUCKET)
+    .upload(path, data, { contentType, upsert: true });
+  if (error) throw new Error(`Storage 업로드 실패: ${error.message}`);
+}
 
 export async function validateImport(
   _prev: ImportPreviewState,
   formData: FormData
 ): Promise<ImportPreviewState> {
-  await requireAdmin();
+  const { userId } = await requireAdmin();
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return { ok: false, message: "파일을 선택하세요." };
@@ -34,9 +50,36 @@ export async function validateImport(
   }
 
   try {
-    const buffer = await file.arrayBuffer();
-    const parsed = parseImportWorkbook(buffer);
+    const ab = await file.arrayBuffer();
+    const buffer = Buffer.from(ab);
+    const parsed = parseImportWorkbook(ab);
     const supabase = await createClient();
+
+    const { data: job, error: jobErr } = await supabase
+      .from("import_jobs")
+      .insert({
+        admin_id: userId,
+        file_name: file.name,
+        status: "uploaded",
+        total_rows: parsed.normalized.length,
+        valid_rows: 0,
+        error_rows: 0,
+      })
+      .select("id")
+      .single();
+
+    if (jobErr || !job) {
+      return { ok: false, message: jobErr?.message ?? "import_jobs 생성 실패" };
+    }
+
+    const jobId = job.id as string;
+    const originalPath = `${jobId}/original.xlsx`;
+    await uploadImportObject(
+      supabase,
+      originalPath,
+      buffer,
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
 
     const assetNos = parsed.normalized.map((r) => r.asset_no).filter(Boolean);
     const serials = parsed.normalized
@@ -118,17 +161,55 @@ export async function validateImport(
     }
 
     if (parsed.errors.length > 0) {
-      const errBuf = buildErrorWorkbook(parsed.rawRows, parsed.errors);
+      const errBuf = Buffer.from(
+        buildErrorWorkbook(parsed.rawRows, parsed.errors)
+      );
+      const errorPath = `${jobId}/errors.xlsx`;
+      await uploadImportObject(
+        supabase,
+        errorPath,
+        errBuf,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+
+      const { data: signed } = await supabase.storage
+        .from(IMPORT_BUCKET)
+        .createSignedUrl(errorPath, 60 * 30);
+
+      await supabase
+        .from("import_jobs")
+        .update({
+          status: "failed",
+          storage_path: originalPath,
+          error_storage_path: errorPath,
+          error_rows: parsed.errors.length,
+          valid_rows: 0,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", jobId);
+
       return {
         ok: false,
-        message: `검증 실패: ${parsed.errors.length}건 오류`,
+        message: `검증 실패: ${parsed.errors.length}건 오류 (7일 후 자동 만료)`,
         preview: parsed.preview,
         errors: parsed.errors.slice(0, 100),
-        errorFileBase64: Buffer.from(errBuf).toString("base64"),
+        errorFileBase64: errBuf.toString("base64"),
+        errorDownloadUrl: signed?.signedUrl,
+        jobId,
         totalRows: parsed.normalized.length,
         validRows: 0,
       };
     }
+
+    await supabase
+      .from("import_jobs")
+      .update({
+        status: "validated",
+        storage_path: originalPath,
+        valid_rows: parsed.normalized.length,
+        error_rows: 0,
+      })
+      .eq("id", jobId);
 
     return {
       ok: true,
@@ -138,6 +219,7 @@ export async function validateImport(
         JSON.stringify(parsed.normalized),
         "utf8"
       ).toString("base64"),
+      jobId,
       totalRows: parsed.normalized.length,
       validRows: parsed.normalized.length,
     };
@@ -156,6 +238,7 @@ export async function commitImport(
 ): Promise<ImportPreviewState> {
   await requireAdmin();
   const payloadBase64 = String(formData.get("payloadBase64") ?? "");
+  const jobId = String(formData.get("jobId") ?? "");
   if (!payloadBase64) {
     return { ok: false, message: "검증된 데이터가 없습니다. 먼저 검증하세요." };
   }
@@ -172,13 +255,31 @@ export async function commitImport(
 
     if (error) {
       console.error("[commitImport]", error.message);
+      if (jobId) {
+        await supabase
+          .from("import_jobs")
+          .update({ status: "failed", completed_at: new Date().toISOString() })
+          .eq("id", jobId);
+      }
       return { ok: false, message: error.message };
     }
 
     const result = data as { ok?: boolean; count?: number };
+    if (jobId) {
+      await supabase
+        .from("import_jobs")
+        .update({
+          status: "committed",
+          valid_rows: result.count ?? rows.length,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", jobId);
+    }
+
     return {
       ok: true,
       message: `${result.count ?? rows.length}건을 반영했습니다.`,
+      jobId: jobId || undefined,
       totalRows: rows.length,
       validRows: result.count ?? rows.length,
     };
@@ -189,4 +290,22 @@ export async function commitImport(
       message: e instanceof Error ? e.message : "반영 중 오류",
     };
   }
+}
+
+/** 만료(7일)된 임포트 작업·Storage 객체 정리 */
+export async function cleanupExpiredImports(): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cleanup_expired_import_jobs");
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  const result = data as { expired_jobs?: number };
+  return {
+    ok: true,
+    message: `만료 처리 ${result.expired_jobs ?? 0}건`,
+  };
 }
