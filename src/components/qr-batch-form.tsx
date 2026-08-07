@@ -16,8 +16,8 @@ export function QrBatchForm() {
   const [state, action, pending] = useActionState(createQrBatch, initial);
 
   return (
-    <div className="space-y-4">
-      <form action={action} className="flex flex-wrap items-end gap-3">
+    <div className="space-y-2">
+      <form action={action} className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <Label htmlFor="quantity">생성 수량</Label>
           <Input
@@ -28,10 +28,10 @@ export function QrBatchForm() {
             max={500}
             defaultValue={10}
             required
-            className="w-32"
+            className="h-8 w-28"
           />
         </div>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} size="sm">
           {pending ? "생성 중…" : "배치 생성"}
         </Button>
       </form>

@@ -160,39 +160,39 @@ export default async function AdminQrPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">빈 QR 생성</h1>
-        <p className="text-sm text-muted-foreground">
-          배치를 생성한 뒤 SVG·PNG·PDF로 다운로드하세요. 미사용·사용(연결)·폐기로
-          분류해 확인할 수 있습니다.
-        </p>
-      </div>
-
-      <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-        <QrBatchForm />
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold">빈 QR 생성</h1>
+          <p className="text-sm text-muted-foreground">
+            배치·미사용/사용 현황을 한 화면에서 확인하세요.
+          </p>
+        </div>
+        <div className="rounded-xl bg-card p-3 ring-1 ring-foreground/10 lg:min-w-[22rem]">
+          <QrBatchForm />
+        </div>
       </div>
 
       <section
-        className="grid gap-3 sm:grid-cols-3"
+        className="flex flex-wrap items-center gap-2"
         aria-label="QR 상태 요약"
         data-testid="qr-status-summary"
       >
-        <StatusSummaryCard
+        <StatusSummaryChip
           href="/admin/qr?status=unused"
           label="미사용"
           count={totals.unused}
           active={statusFilter === "unused"}
           tone="unused"
         />
-        <StatusSummaryCard
+        <StatusSummaryChip
           href="/admin/qr?status=assigned"
-          label="사용(연결됨)"
+          label="사용"
           count={totals.assigned}
           active={statusFilter === "assigned"}
           tone="assigned"
         />
-        <StatusSummaryCard
+        <StatusSummaryChip
           href="/admin/qr?status=retired"
           label="폐기"
           count={totals.retired}
@@ -201,68 +201,111 @@ export default async function AdminQrPage({
         />
       </section>
 
-      <div className="rounded-xl bg-card ring-1 ring-foreground/10">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>배치 ID</TableHead>
-              <TableHead>수량</TableHead>
-              <TableHead>미사용</TableHead>
-              <TableHead>사용</TableHead>
-              <TableHead>폐기</TableHead>
-              <TableHead>생성일</TableHead>
-              <TableHead>다운로드</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {batchList.length ? (
-              batchList.map((b) => {
-                const counts = batchCounts.get(b.id) ?? emptyCounts();
-                return (
-                  <TableRow key={b.id}>
-                    <TableCell className="font-mono text-xs">
-                      {b.id.slice(0, 8)}
-                    </TableCell>
-                    <TableCell>{b.quantity}</TableCell>
-                    <TableCell>{counts.unused}</TableCell>
-                    <TableCell>{counts.assigned}</TableCell>
-                    <TableCell>{counts.retired}</TableCell>
-                    <TableCell>
-                      {new Date(b.created_at).toLocaleString("ko-KR")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {(["svg", "png", "pdf-a4", "pdf-label"] as const).map(
-                          (format) => (
+      <section aria-label="배치 목록">
+        <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">배치</h2>
+          <p className="text-xs text-muted-foreground">
+            최근 {batchList.length}건 · 미사용/사용/폐기
+          </p>
+        </div>
+        <div
+          className="max-h-[min(28rem,calc(100dvh-13rem))] overflow-auto rounded-xl bg-card ring-1 ring-foreground/10"
+          data-testid="qr-batch-table"
+        >
+          <table className="w-full caption-bottom text-sm">
+            <thead className="sticky top-0 z-10 border-b bg-card">
+              <tr className="border-b">
+                <th className="h-9 px-2 text-left align-middle text-xs font-medium text-muted-foreground">
+                  배치
+                </th>
+                <th className="h-9 px-2 text-left align-middle text-xs font-medium text-muted-foreground">
+                  수량
+                </th>
+                <th className="h-9 px-2 text-left align-middle text-xs font-medium text-muted-foreground">
+                  미사용 / 사용 / 폐기
+                </th>
+                <th className="h-9 px-2 text-left align-middle text-xs font-medium text-muted-foreground">
+                  생성
+                </th>
+                <th className="h-9 px-2 text-left align-middle text-xs font-medium text-muted-foreground">
+                  다운로드
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {batchList.length ? (
+                batchList.map((b) => {
+                  const counts = batchCounts.get(b.id) ?? emptyCounts();
+                  return (
+                    <tr
+                      key={b.id}
+                      className="border-b last:border-0 hover:bg-muted/40"
+                    >
+                      <td className="px-2 py-1.5 font-mono text-xs">
+                        {b.id.slice(0, 8)}
+                      </td>
+                      <td className="px-2 py-1.5 tabular-nums">{b.quantity}</td>
+                      <td className="px-2 py-1.5 tabular-nums">
+                        <span className="text-emerald-700 dark:text-emerald-400">
+                          {counts.unused}
+                        </span>
+                        <span className="text-muted-foreground"> / </span>
+                        <span className="text-sky-700 dark:text-sky-400">
+                          {counts.assigned}
+                        </span>
+                        <span className="text-muted-foreground"> / </span>
+                        <span className="text-zinc-600 dark:text-zinc-400">
+                          {counts.retired}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(b.created_at).toLocaleString("ko-KR", {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-nowrap gap-0.5">
+                          {(
+                            [
+                              ["svg", "SVG"],
+                              ["png", "PNG"],
+                              ["pdf-a4", "A4"],
+                              ["pdf-label", "라벨"],
+                            ] as const
+                          ).map(([format, label]) => (
                             <a
                               key={format}
                               href={`/api/admin/qr/${b.id}/export?format=${format}`}
                               className={cn(
-                                buttonVariants({ variant: "ghost", size: "xs" })
+                                buttonVariants({ variant: "ghost", size: "xs" }),
+                                "px-1.5"
                               )}
                             >
-                              {format}
+                              {label}
                             </a>
-                          )
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center text-muted-foreground"
-                >
-                  아직 생성된 배치가 없습니다.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-2 py-6 text-center text-muted-foreground"
+                  >
+                    아직 생성된 배치가 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div>
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -348,7 +391,7 @@ export default async function AdminQrPage({
   );
 }
 
-function StatusSummaryCard({
+function StatusSummaryChip({
   href,
   label,
   count,
@@ -363,22 +406,22 @@ function StatusSummaryCard({
 }) {
   const toneClass =
     tone === "unused"
-      ? "border-l-emerald-600"
+      ? "border-emerald-600/40 text-emerald-800 dark:text-emerald-300"
       : tone === "assigned"
-        ? "border-l-sky-600"
-        : "border-l-zinc-500";
+        ? "border-sky-600/40 text-sky-800 dark:text-sky-300"
+        : "border-zinc-500/40 text-zinc-700 dark:text-zinc-300";
 
   return (
     <Link
       href={href}
       className={cn(
-        "rounded-xl border-l-4 bg-card p-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/40",
+        "inline-flex items-center gap-1.5 rounded-lg border bg-card px-2.5 py-1 text-sm ring-1 ring-foreground/5 transition-colors hover:bg-muted/50",
         toneClass,
-        active && "ring-2 ring-foreground/30"
+        active && "ring-2 ring-foreground/25"
       )}
     >
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{count}</p>
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums">{count}</span>
     </Link>
   );
 }
