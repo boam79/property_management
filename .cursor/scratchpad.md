@@ -33,15 +33,16 @@
 
 ## Current Status / Progress Tracking
 
-- 모드: Executor — 코드 마일스톤 완료, 사용자 확인 대기
-- 브랜치: `cursor/qr-used-unused-classify-ad17` @ `3599e10`
+- 모드: Executor — 코드·배포 마일스톤 완료, 사용자 확인 대기
+- 브랜치: `cursor/qr-used-unused-classify-ad17` @ `4ecaebb`
 - PR: https://github.com/boam79/property_management/pull/5
+- Production: READY `dpl_2EffxpQ3Ha64SB17wBUmVaM8reog` → `https://property-management-eight-rouge.vercel.app/admin/qr`
 
 ## Executor's Feedback or Assistance Requests
 
-- 배포 반영 후 `/admin/qr`에서 미사용·사용 카드/섹션 수동 확인 요청
+- **수동 확인 요청:** `/admin/qr`에서 미사용·사용(연결됨) 카드/섹션이 보이는지 확인 후 알려 주세요
 - Planner에게 본 기능 완료 확정 요청
-- Vercel Git 미연동 시 main merge 후에도 자동 배포 안 될 수 있음
+- Vercel 프로젝트에 `NEXT_PUBLIC_*` env를 Dashboard에 넣어 두면 아카이브 배포 시 env 주입이 불필요함
 
 ## Lessons
 
