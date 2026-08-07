@@ -5,7 +5,7 @@ const https = require("https");
 const root = __dirname;
 const url =
   process.env.APP_SRC_URL ||
-  "https://raw.githubusercontent.com/boam79/property_management/cursor/vercel-archive-deploy-ad17/deploy-bundle/app-src.tgz";
+  "https://raw.githubusercontent.com/boam79/property_management/8496cc2ac17c9eee157929ac9fda7464a196804a/deploy-bundle/app-src.tgz";
 function download(u) {
   return new Promise((resolve, reject) => {
     const follow = (addr, n) => {
