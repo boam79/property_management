@@ -34,7 +34,7 @@
 3. [x] E2E·스크립트 자격증명 제거
 4. [x] latest-unused 게이트 + headers + `/q` RPC
 5. [x] Import commit 서버 재검증
-6. [ ] 커밋·푸시·PR (진행 중)
+6. [x] 커밋·푸시·PR — `da1f0e7`, PR #4
 7. [ ] 사용자: 마이그레이션 적용 + signup 비활성 + 비밀번호 교체
 8. [ ] 배포 후 E2E (env 자격증명으로)
 
@@ -44,17 +44,19 @@
 - [x] main 카드 UI와 merge
 - [x] **main 커밋·푸시**
 - [x] 보안 하드닝 코드 구현 (`cursor/security-hardening-ad17`)
-- [ ] **보안 브랜치 커밋·푸시·PR**
+- [x] **보안 브랜치 커밋·푸시·PR** (`da1f0e7`, https://github.com/boam79/property_management/pull/4)
 - [ ] **사용자: Supabase 마이그레이션 적용** (`20260806150000_*`, `20260806160000_*`, `20260807020000_intrusion_hardening.sql`)
 - [ ] **사용자: signup 비활성 + 기본 비밀번호 교체**
 - [ ] 배포 후 E2E 재실행
+- [ ] Planner: 보안 작업 완료 확정
 
 ## Current Status / Progress Tracking
 
-- 브랜치: `cursor/security-hardening-ad17`
+- 브랜치: `cursor/security-hardening-ad17` @ `da1f0e7` (pushed)
+- PR: https://github.com/boam79/property_management/pull/4
 - `check:redirect` PASS (15 cases)
 - `tsc --noEmit` PASS
-- 커밋·푸시 대기
+- Executor 마일스톤: 코드 푸시 완료 — 사용자 수동 확인 + Planner 완료 선언 대기
 
 ## Executor's Feedback or Assistance Requests
 
@@ -62,7 +64,7 @@
 2. Auth → disable public signup
 3. 테스트/기본 계정 비밀번호 로테이션
 4. Vercel에 `ENABLE_E2E_HELPERS` 미설정 확인
-5. Planner: 본 마일스톤(보안 코드 푸시) 완료 확인 요청
+5. 사용자: PR #4 / 보안 수정 수동 확인 후 Planner에게 완료 확정 요청
 
 ## Lessons
 
