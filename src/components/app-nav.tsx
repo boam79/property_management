@@ -19,12 +19,6 @@ export function AppNav({ role }: { role: UserRole }) {
           >
             자산목록
           </Link>
-          <Link
-            href="/scan"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-          >
-            QR스캔
-          </Link>
           {isAdmin ? (
             <>
               <Link

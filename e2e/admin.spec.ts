@@ -44,14 +44,12 @@ test.describe("관리자 E2E", () => {
 
     // 관리자 메뉴가 보여야 함
     await expect(page.getByRole("link", { name: "대시보드" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "QR스캔" })).toBeVisible();
     await expect(page.getByRole("link", { name: "QR생성" })).toBeVisible();
     await expect(page.getByRole("link", { name: "임포트" })).toBeVisible();
     await expect(page.getByRole("link", { name: "QR연결" })).toBeVisible();
     await expect(page.getByRole("link", { name: "감사로그" })).toBeVisible();
     await expect(page.getByRole("link", { name: "사용자" })).toBeVisible();
-  });
-
+    await expect(page.getByRole("link", { name: "QR스캔" })).toHaveCount(0);
   test("대시보드 로드", async ({ page }) => {
     await loginAsAdmin(page);
     await page.getByRole("link", { name: "대시보드" }).click();
@@ -184,13 +182,8 @@ test.describe("관리자 E2E", () => {
     });
   });
 
-  test("QR스캔·일괄변경·대시보드 알림 UI", async ({ page }) => {
+  test("일괄변경·대시보드 알림 UI", async ({ page }) => {
     await loginAsAdmin(page);
-
-    await page.getByRole("link", { name: "QR스캔" }).click();
-    await page.waitForURL(/\/scan/);
-    await expect(page.getByTestId("qr-scanner")).toBeVisible();
-    await expect(page.getByTestId("scan-start")).toBeVisible();
 
     await page.getByRole("link", { name: "자산목록" }).click();
     await page.waitForURL(/\/assets/);

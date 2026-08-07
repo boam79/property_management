@@ -32,13 +32,12 @@ QR 사용/미사용 분류 UI (PR #5) 배포됨.
 
 ## Current Status / Progress Tracking
 
-- 모드: Executor — 배치표 한 화면 맞춤 배포 완료, 사용자 확인 대기
-- Production READY: `dpl_9VoNiJkum3YntMfpDoc9UTYh6s2f`
-- URL: https://property-management-eight-rouge.vercel.app/admin/qr
+- Executor: QR스캔 메뉴 제거 → 커밋·푸시
 
 ## Executor's Feedback or Assistance Requests
 
-- **수동 확인 요청:** 배치표가 한 화면에 보이는지 확인 후 알려 주세요
+- QR스캔 내비 링크 제거 완료. `/scan` 페이지 자체는 URL 직접 접근용으로 남겨 둠(메뉴만 삭제 요청).
+- 사용자: 푸시 확인 요청
 
 ## Lessons
 
