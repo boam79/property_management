@@ -5,7 +5,7 @@ const https = require("https");
 const root = __dirname;
 const url =
   process.env.APP_SRC_URL ||
-  "https://raw.githubusercontent.com/boam79/property_management/4768e373f53dbab04eb9ca345e73888501c050a6/deploy-bundle/app-src.tgz";
+  "REPLACE_URL";
 function download(u) {
   return new Promise((resolve, reject) => {
     const follow = (addr, n) => {
@@ -30,11 +30,7 @@ function download(u) {
 (async () => {
   console.log("downloading", url);
   const buf = await download(url);
-  const tgz = path.join(root, "app-src.tgz");
-  fs.writeFileSync(tgz, buf);
+  fs.writeFileSync(path.join(root, "app-src.tgz"), buf);
   execSync("tar -xzf app-src.tgz", { stdio: "inherit", cwd: root });
-  console.log("restored source tree", buf.length);
-})().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+  console.log("restored", buf.length);
+})().catch((e) => { console.error(e); process.exit(1); });
