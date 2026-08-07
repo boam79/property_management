@@ -34,7 +34,13 @@ QR 사용/미사용 분류 UI (PR #5) 배포됨.
 
 ## Current Status / Progress Tracking
 
-- Executor: 위치 드롭다운 구현 중 → 커밋·배포·E2E
+- Executor: 위치 드롭다운 배포·검증 완료
+- Deploy READY: `dpl_72NRut4A5v7u1MwnrpMwnihdLvqw`
+- Admin E2E **7/7 PASS** (dashboard-location-filter = SELECT)
+
+## Executor's Feedback or Assistance Requests
+
+- 사용자: https://property-management-eight-rouge.vercel.app/admin 에서 위치 드롭다운 수동 확인 요청
 
 ## Executor's Feedback or Assistance Requests
 
