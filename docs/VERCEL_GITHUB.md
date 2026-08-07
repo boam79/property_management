@@ -9,11 +9,18 @@ MCP `deploy_to_vercel`로 파일을 직접 올리면 페이로드 제한 때문�
 2. **Settings → Git** → **Connect Git Repository**
 3. GitHub 저장소: `boam79/property_management`
 4. Production Branch: `main`
-5. **Settings → Environment Variables** 에 아래를 Production / Preview 모두 설정:
+5. **Settings → Build & Development Settings**
+   - Framework Preset: **Next.js**
+   - Build Command: **`next build`** (또는 Override OFF → 기본값 / 리포의 `vercel.json`)
+   - **Do not** set Build Command to `npm run build` — that double-wraps the script and can recurse (`> build` / `> npm run build` loop)
+   - Install Command: `npm install` (ensure `package-lock.json` is in the Git deploy)
+6. **Settings → Environment Variables** 에 아래를 Production / Preview 모두 설정:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `NEXT_PUBLIC_APP_URL` (Production: 배포 도메인, Preview: 비워도 됨)
-6. **Deployments → Redeploy** (Clear cache 권장) 한 번 실행
+7. **Deployments → Redeploy** (Clear cache 권장) 한 번 실행
+
+리포 루트 `vercel.json`이 `buildCommand: "next build"`를 고정합니다. Dashboard Override가 켜져 있으면 Override 값이 우선하므로 Override도 `next build`로 맞추세요.
 
 ## PR 미리보기
 
