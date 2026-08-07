@@ -59,9 +59,6 @@ export const EXPORT_HEADERS = [
   ...IMPORT_OPTIONAL_HEADERS,
 ] as const;
 
-export const ASSET_PHOTO_MAX_BYTES = 4 * 1024 * 1024; // Vercel body ~4.5MB headroom
-export const ASSET_PHOTO_MAX_PER_ASSET = 10;
-
 /** 수리 중 자산이 이 일수 이상 갱신 없으면 대시보드 알림 */
 export const REPAIR_STALE_DAYS = 14;
 /** 미사용 QR 재고가 이 값 미만이면 대시보드 알림 */

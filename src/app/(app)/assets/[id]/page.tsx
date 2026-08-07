@@ -3,14 +3,13 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AssetEditForm } from "@/components/asset-edit-form";
-import { AssetPhotosPanel } from "@/components/asset-photos-panel";
 import { AssetTransferForm } from "@/components/asset-transfer-form";
 import {
   RetireQrButton,
   UnlinkQrButton,
 } from "@/components/qr-lifecycle-actions";
 import { QR_STATUS_LABELS } from "@/lib/constants";
-import type { Asset, AssetPhoto, AuditLog, QrCode } from "@/lib/types";
+import type { Asset, AuditLog, QrCode } from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -44,28 +43,22 @@ export default async function AssetDetailPage({
     qr = data as QrCode | null;
   }
 
-  const [{ data: suggestionRows }, { data: photoRows }, historyResult] =
-    await Promise.all([
-      supabase
-        .from("assets")
-        .select("category, location, department")
-        .order("updated_at", { ascending: false })
-        .limit(500),
-      supabase
-        .from("asset_photos")
-        .select("*")
-        .eq("asset_id", id)
-        .order("created_at", { ascending: false }),
-      current?.profile.role === "ADMIN"
-        ? supabase
-            .from("audit_logs")
-            .select("*")
-            .eq("entity_type", "asset")
-            .eq("entity_id", id)
-            .order("created_at", { ascending: false })
-            .limit(50)
-        : Promise.resolve({ data: [] as AuditLog[] }),
-    ]);
+  const [{ data: suggestionRows }, historyResult] = await Promise.all([
+    supabase
+      .from("assets")
+      .select("category, location, department")
+      .order("updated_at", { ascending: false })
+      .limit(500),
+    current?.profile.role === "ADMIN"
+      ? supabase
+          .from("audit_logs")
+          .select("*")
+          .eq("entity_type", "asset")
+          .eq("entity_id", id)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      : Promise.resolve({ data: [] as AuditLog[] }),
+  ]);
 
   const historyRows = historyResult.data;
 
@@ -80,15 +73,6 @@ export default async function AssetDetailPage({
       (suggestionRows ?? []).map((r) => r.department as string | null)
     ),
   };
-
-  const photos = (photoRows ?? []) as AssetPhoto[];
-  const signedUrls: Record<string, string> = {};
-  for (const p of photos) {
-    const { data: signed } = await supabase.storage
-      .from("asset-photos")
-      .createSignedUrl(p.storage_path, 3600);
-    if (signed?.signedUrl) signedUrls[p.id] = signed.signedUrl;
-  }
 
   const history = (historyRows ?? []) as AuditLog[];
   const isAdmin = current?.profile.role === "ADMIN";
@@ -137,15 +121,6 @@ export default async function AssetDetailPage({
         ) : (
           <p className="text-sm text-muted-foreground">QR 미연결</p>
         )}
-      </div>
-
-      <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-        <h2 className="mb-4 text-sm font-medium">사진</h2>
-        <AssetPhotosPanel
-          assetId={(asset as Asset).id}
-          photos={photos}
-          signedUrls={signedUrls}
-        />
       </div>
 
       <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">

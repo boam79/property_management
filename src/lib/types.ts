@@ -96,13 +96,3 @@ export interface AuditLog {
   payload: Record<string, unknown>;
   created_at: string;
 }
-
-export interface AssetPhoto {
-  id: string;
-  asset_id: string;
-  storage_path: string;
-  file_name: string | null;
-  content_type: string | null;
-  created_by: string | null;
-  created_at: string;
-}

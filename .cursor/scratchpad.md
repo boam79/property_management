@@ -30,7 +30,22 @@ QR 사용/미사용 분류 UI (PR #5) 배포됨.
 - [ ] 사용자 확인
 - [ ] (별도) 보안 PR #4 / 마이그레이션 ops
 
-추가 요청: 대시보드(및 자산목록) 위치 필터를 입력값이 아닌 **기존 위치 드롭다운**으로.
+추가 요청(상담): 자산 사진은 용량이 커서 Supabase Storage 외 대안 검토.
+
+## Key Challenges and Analysis — 이미지 저장
+
+현재: Supabase Storage `asset-photos` (장당 ~4MB, 자산당 10장). Free/Pro 스토리지·대역폭 한도에 빨리 닿을 수 있음.
+
+### 대안 비교 (권장 순)
+
+1. **Vercel Blob** — Vercel 배포와 동일 계정, SDK 단순, CDN. Hobby/Pro 용량·요금 확인 필요. Next.js Server Action과 잘 맞음.
+2. **Cloudflare R2** — S3 호환, **이그레스(전송) 요금 없음**이 장점. 대용량·조회 많은 이미지에 유리. 연동은 `@aws-sdk/client-s3` 또는 직접 API.
+3. **AWS S3 (+ CloudFront)** — 표준·확장성 최고. 설정·IAM이 상대적으로 무거움.
+4. **업로드 전 압축만 유지 + Supabase** — 스토리지 교체 없이 WebP/리사이즈로 용량 절감 (가장 작은 변경).
+
+메타데이터(`asset_photos` 테이블)는 Supabase DB에 두고, **파일 blob만 외부 스토리지**로 빼는 구성이 현실적.
+
+권장: 빠르게 가려면 **Vercel Blob**, 비용·용량이 커지면 **R2**.
 
 ## Current Status / Progress Tracking
 

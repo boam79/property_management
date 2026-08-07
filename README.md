@@ -9,7 +9,7 @@ QR 라벨을 미리 생성·부착한 뒤, 스캔으로 일반 비품·IT 자산
 | QR 생성 | 배치 생성, SVG/PNG/PDF 라벨 다운로드 |
 | QR 수명주기 | 연결 해제(→미사용), 폐기(retired) |
 | 스캔 등록 | `/q/{token}` → 로그인 → 자산 신규 등록 (동시성 안전 RPC) |
-| 자산 | 목록(페이지네이션·검색·필터), 상세 수정, 사진, 변경 이력 |
+| 자산 | 목록(페이지네이션·검색·필터), 상세 수정, 변경 이력 |
 | 내보내기 | 현재 필터 기준 Excel/CSV (임포트 헤더 호환) |
 | 임포트 | xlsx 템플릿·검증·커밋 |
 | 이관 | 자산 상세에서 담당자·부서·위치 이관(사유 필수) |
@@ -50,8 +50,9 @@ npm run dev
 1. `20260806000000_init.sql` — 스키마·RPC
 2. `20260806130000_security_hardening.sql` — 권한 강화
 3. `20260806140000_import_storage_cleanup.sql` — imports 버킷
-4. `20260806150000_enhancements.sql` — QR unlink/retire, 사진, 역할 RPC
+4. `20260806150000_enhancements.sql` — QR unlink/retire, 역할 RPC
 5. `20260806160000_p2_bulk_update.sql` — 일괄 변경 RPC
+6. `20260807090000_drop_asset_photos.sql` — 자산 사진 기능 제거 (권장)
 
 Supabase SQL Editor에 붙여 넣거나 CLI로 push합니다. **ADMIN 승격**은 초기 1회 SQL로 하거나, 승격 후 앱의 **사용자** 메뉴를 사용합니다.
 
@@ -96,4 +97,3 @@ PLAYWRIGHT_BASE_URL=... npm run test:e2e:qr
 
 - `profiles.role`은 클라이언트가 스스로 올릴 수 없습니다. ADMIN 변경은 `admin_set_profile_role` RPC만.
 - anon에 테이블 DML/민감 RPC 실행 권한이 없습니다.
-- 자산 사진은 private 버킷 `asset-photos` + signed URL로 조회합니다.
