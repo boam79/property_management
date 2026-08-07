@@ -65,6 +65,13 @@ test.describe("관리자 E2E", () => {
     await expect(page.getByRole("link", { name: /일반 비품/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /IT 자산/ })).toBeVisible();
 
+    const locationFilter = page.getByTestId("dashboard-location-filter");
+    await expect(locationFilter).toBeVisible();
+    await expect(locationFilter).toHaveJSProperty("tagName", "SELECT");
+    const locationOptions = await locationFilter.locator("option").allTextContents();
+    expect(locationOptions[0]?.trim()).toBe("전체");
+    expect(locationOptions.length).toBeGreaterThan(1);
+
     const text = await page.locator("body").innerText();
     fs.writeFileSync(
       path.join(OUT_DIR, "02-dashboard.txt"),

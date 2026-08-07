@@ -19,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -73,7 +72,7 @@ export default async function AdminDashboardPage({
   staleBefore.setDate(staleBefore.getDate() - REPAIR_STALE_DAYS);
   const staleIso = staleBefore.toISOString();
 
-  const [{ count: staleRepairCount }, { count: unusedQrCount }] =
+  const [{ count: staleRepairCount }, { count: unusedQrCount }, { data: locationRows }] =
     await Promise.all([
       supabase
         .from("assets")
@@ -84,7 +83,20 @@ export default async function AdminDashboardPage({
         .from("qr_codes")
         .select("*", { count: "exact", head: true })
         .eq("status", "unused"),
+      supabase.from("assets").select("location"),
     ]);
+
+  const locationOptions = Array.from(
+    new Set(
+      (locationRows ?? [])
+        .map((r) => (r.location as string | null)?.trim() ?? "")
+        .filter((v) => v.length > 0)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ko"));
+  const hasUnspecifiedLocation = (locationRows ?? []).some((r) => {
+    const v = (r.location as string | null)?.trim() ?? "";
+    return v.length === 0;
+  });
 
   const alerts: { id: string; title: string; detail: string; href: string }[] =
     [];
@@ -231,12 +243,23 @@ export default async function AdminDashboardPage({
             </div>
             <div className="space-y-1">
               <Label htmlFor="location">위치</Label>
-              <Input
+              <select
                 id="location"
                 name="location"
                 defaultValue={params.location ?? ""}
-                placeholder="위치 또는 미지정"
-              />
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+                data-testid="dashboard-location-filter"
+              >
+                <option value="">전체</option>
+                {hasUnspecifiedLocation ? (
+                  <option value="미지정">미지정</option>
+                ) : null}
+                {locationOptions.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-2">
               <Button type="submit" className="flex-1 sm:flex-none">

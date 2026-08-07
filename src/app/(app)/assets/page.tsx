@@ -81,6 +81,19 @@ export default async function AssetsPage({
   const rangeStart = totalCount === 0 ? 0 : displayFrom + 1;
   const rangeEnd = Math.min(displayFrom + ASSETS_PAGE_SIZE, totalCount);
 
+  const { data: locationRows } = await supabase.from("assets").select("location");
+  const locationOptions = Array.from(
+    new Set(
+      (locationRows ?? [])
+        .map((r) => (r.location as string | null)?.trim() ?? "")
+        .filter((v) => v.length > 0)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ko"));
+  const hasUnspecifiedLocation = (locationRows ?? []).some((r) => {
+    const v = (r.location as string | null)?.trim() ?? "";
+    return v.length === 0;
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -134,12 +147,23 @@ export default async function AssetsPage({
         </div>
         <div className="space-y-1">
           <Label htmlFor="location">위치</Label>
-          <Input
+          <select
             id="location"
             name="location"
             defaultValue={params.location ?? ""}
-            placeholder="위치"
-          />
+            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+            data-testid="assets-location-filter"
+          >
+            <option value="">전체</option>
+            {hasUnspecifiedLocation ? (
+              <option value="미지정">미지정</option>
+            ) : null}
+            {locationOptions.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
         </div>
         {params.unlinked === "1" ? (
           <input type="hidden" name="unlinked" value="1" />

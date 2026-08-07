@@ -30,12 +30,11 @@ QR 사용/미사용 분류 UI (PR #5) 배포됨.
 - [ ] 사용자 확인
 - [ ] (별도) 보안 PR #4 / 마이그레이션 ops
 
+추가 요청: 대시보드(및 자산목록) 위치 필터를 입력값이 아닌 **기존 위치 드롭다운**으로.
+
 ## Current Status / Progress Tracking
 
-- Executor: 프로덕션 검증 완료
-- Deploy READY: `dpl_58oxZpCMvWeYCrzvEgQMt9ZVWCox`
-- Admin E2E **7/7 PASS** against `https://property-management-eight-rouge.vercel.app`
-- 내비에 QR스캔 없음 확인 (`navTexts`: 자산목록, 대시보드, QR생성, 임포트, QR연결, 사용자, 감사로그)
+- Executor: 위치 드롭다운 구현 중 → 커밋·배포·E2E
 
 ## Executor's Feedback or Assistance Requests
 
