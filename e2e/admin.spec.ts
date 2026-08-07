@@ -82,7 +82,8 @@ test.describe("관리자 E2E", () => {
       fullPage: true,
     });
 
-    await expect(page.getByText("빈 QR 생성")).toBeVisible();
+    // heading으로 한정 — Next.js route announcer와 동일 텍스트 strict 충돌 방지
+    await expect(page.getByRole("heading", { name: "빈 QR 생성" })).toBeVisible();
 
     const qty = page.getByLabel(/수량|개수|생성/).first();
     if (await qty.count()) {
