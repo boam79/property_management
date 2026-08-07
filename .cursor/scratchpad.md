@@ -19,26 +19,26 @@ QR 사용/미사용 분류 UI (PR #5) 배포됨.
 3. [x] QR 목록을 상태 필터 + 구역 분류로 표시
 4. [x] 커밋·푸시·PR — PR #5
 5. [x] 배치표 한 화면 맞춤 (컬럼 압축·sticky 헤더)
-6. [ ] 커밋·푸시·프로덕션 배포
+6. [x] 커밋·푸시·프로덕션 배포 (`678adb0`, `dpl_9VoNiJkum3YntMfpDoc9UTYh6s2f`)
 7. [ ] 사용자 수동 확인 후 Planner 완료 확정
 
 ## Project Status Board
 
 - [x] QR 사용/미사용 분류 UI
 - [x] 배치표 한 화면 레이아웃
-- [ ] 커밋·푸시·배포
+- [x] 커밋·푸시·배포
 - [ ] 사용자 확인
 - [ ] (별도) 보안 PR #4 / 마이그레이션 ops
 
 ## Current Status / Progress Tracking
 
-- 모드: Executor
-- 브랜치: `cursor/qr-used-unused-classify-ad17`
-- 배치표: 상단 압축, `미사용/사용/폐기` 한 컬럼, `max-h` + sticky 헤더
+- 모드: Executor — 배치표 한 화면 맞춤 배포 완료, 사용자 확인 대기
+- Production READY: `dpl_9VoNiJkum3YntMfpDoc9UTYh6s2f`
+- URL: https://property-management-eight-rouge.vercel.app/admin/qr
 
 ## Executor's Feedback or Assistance Requests
 
-- 배포 후 `/admin/qr` 배치표가 한 화면에 보이는지 확인 요청
+- **수동 확인 요청:** 배치표가 한 화면에 보이는지 확인 후 알려 주세요
 
 ## Lessons
 
