@@ -2,14 +2,22 @@ import { test, expect, type Page } from "@playwright/test";
 import path from "path";
 import fs from "fs";
 
-const ADMIN_EMAIL = "admin@example.com";
-const ADMIN_PASSWORD = "Admin123!";
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) {
+    throw new Error(
+      `Missing ${name}. Set E2E credentials via env (never commit passwords).`
+    );
+  }
+  return v;
+}
+
 const OUT_DIR = path.join(process.cwd(), "e2e-results");
 
 async function loginAsAdmin(page: Page) {
   await page.goto("/login");
-  await page.getByLabel("이메일").fill(ADMIN_EMAIL);
-  await page.getByLabel("비밀번호").fill(ADMIN_PASSWORD);
+  await page.getByLabel("이메일").fill(requireEnv("E2E_ADMIN_EMAIL"));
+  await page.getByLabel("비밀번호").fill(requireEnv("E2E_ADMIN_PASSWORD"));
   await page.getByRole("button", { name: "로그인" }).click();
   await page.waitForURL(/\/(admin|assets)/, { timeout: 20_000 });
 }

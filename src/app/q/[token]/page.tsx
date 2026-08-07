@@ -25,15 +25,16 @@ export default async function QrTokenPage({
   }
 
   const supabase = await createClient();
-  const { data: qr, error } = await supabase
-    .from("qr_codes")
-    .select("*")
-    .eq("token", token)
-    .maybeSingle();
+  // unused 토큰 목록 노출 방지를 위해 exact-token RPC만 사용
+  const { data: qrRows, error } = await supabase.rpc("get_qr_by_token", {
+    p_token: token,
+  });
 
   if (error) {
     console.error("[q page]", error.message);
   }
+
+  const qr = Array.isArray(qrRows) ? qrRows[0] : qrRows;
 
   if (!qr) {
     return (

@@ -15,7 +15,8 @@
     "test:assets-pagination": "node scripts/assets-list-pagination-check.mjs",
     "test:assets-export": "node scripts/assets-export-check.mjs",
     "test:qr-token": "node scripts/qr-token-check.mjs",
-    "check:no-stub": "node scripts/check-no-stub.mjs"
+    "check:no-stub": "node scripts/check-no-stub.mjs",
+    "check:redirect": "node scripts/redirect-safety-check.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

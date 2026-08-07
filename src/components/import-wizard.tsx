@@ -131,14 +131,9 @@ export function ImportWizard() {
         </div>
       ) : null}
 
-      {validateState.ok && validateState.payloadBase64 ? (
+      {validateState.ok && validateState.jobId ? (
         <form action={commitAction} className="space-y-2">
-          <input
-            type="hidden"
-            name="payloadBase64"
-            value={validateState.payloadBase64}
-          />
-          <input type="hidden" name="jobId" value={validateState.jobId ?? ""} />
+          <input type="hidden" name="jobId" value={validateState.jobId} />
           <Button type="submit" disabled={committing}>
             {committing ? "반영 중…" : "전체 반영"}
           </Button>

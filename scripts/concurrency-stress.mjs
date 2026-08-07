@@ -23,8 +23,11 @@ loadEnv();
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const adminEmail = process.env.TEST_ADMIN_EMAIL ?? "admin@example.com";
-const adminPassword = process.env.TEST_ADMIN_PASSWORD ?? "Admin123!";
+const adminEmail = process.env.TEST_ADMIN_EMAIL;
+const adminPassword = process.env.TEST_ADMIN_PASSWORD;
+if (!adminEmail || !adminPassword) {
+  throw new Error("Set TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD (do not hardcode).");
+}
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 8);
 
 async function authedClient(email, password) {

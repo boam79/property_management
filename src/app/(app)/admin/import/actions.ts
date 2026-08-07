@@ -18,6 +18,7 @@ export type ImportPreviewState = {
   errors?: ImportRowError[];
   errorFileBase64?: string;
   errorDownloadUrl?: string;
+  /** @deprecated 클라이언트 payload 전달 중단 — jobId만 사용 */
   payloadBase64?: string;
   jobId?: string;
   totalRows?: number;
@@ -211,14 +212,30 @@ export async function validateImport(
       })
       .eq("id", jobId);
 
+    // 서버에 검증 행 저장 — 클라이언트 payload 신뢰 금지
+    await supabase.from("import_rows").delete().eq("job_id", jobId);
+    const rowInserts = parsed.normalized.map((r, i) => ({
+      job_id: jobId,
+      row_number: i + 1,
+      raw_data: r,
+      normalized_data: r,
+      status: "valid" as const,
+      errors: [],
+    }));
+    if (rowInserts.length) {
+      const { error: rowsErr } = await supabase
+        .from("import_rows")
+        .insert(rowInserts);
+      if (rowsErr) {
+        console.error("[validateImport rows]", rowsErr.message);
+        return { ok: false, message: `검증 행 저장 실패: ${rowsErr.message}` };
+      }
+    }
+
     return {
       ok: true,
       message: `${parsed.normalized.length}행 검증 통과. 반영을 진행하세요.`,
       preview: parsed.preview,
-      payloadBase64: Buffer.from(
-        JSON.stringify(parsed.normalized),
-        "utf8"
-      ).toString("base64"),
       jobId,
       totalRows: parsed.normalized.length,
       validRows: parsed.normalized.length,
@@ -237,49 +254,78 @@ export async function commitImport(
   formData: FormData
 ): Promise<ImportPreviewState> {
   await requireAdmin();
-  const payloadBase64 = String(formData.get("payloadBase64") ?? "");
   const jobId = String(formData.get("jobId") ?? "");
-  if (!payloadBase64) {
-    return { ok: false, message: "검증된 데이터가 없습니다. 먼저 검증하세요." };
+  if (!jobId) {
+    return { ok: false, message: "검증된 작업이 없습니다. 먼저 검증하세요." };
   }
 
   try {
-    const rows = JSON.parse(
-      Buffer.from(payloadBase64, "base64").toString("utf8")
-    ) as NormalizedImportRow[];
-
     const supabase = await createClient();
+
+    const { data: job, error: jobErr } = await supabase
+      .from("import_jobs")
+      .select("id, status")
+      .eq("id", jobId)
+      .maybeSingle();
+
+    if (jobErr || !job || job.status !== "validated") {
+      return {
+        ok: false,
+        message: "검증 완료된 임포트 작업만 반영할 수 있습니다.",
+      };
+    }
+
+    const { data: storedRows, error: rowsErr } = await supabase
+      .from("import_rows")
+      .select("normalized_data")
+      .eq("job_id", jobId)
+      .eq("status", "valid")
+      .order("row_number", { ascending: true });
+
+    if (rowsErr || !storedRows?.length) {
+      return {
+        ok: false,
+        message: rowsErr?.message ?? "저장된 검증 데이터가 없습니다.",
+      };
+    }
+
+    const rows = storedRows.map(
+      (r) => r.normalized_data as NormalizedImportRow
+    );
+
     const { data, error } = await supabase.rpc("import_assets_batch", {
       p_rows: rows,
     });
 
     if (error) {
       console.error("[commitImport]", error.message);
-      if (jobId) {
-        await supabase
-          .from("import_jobs")
-          .update({ status: "failed", completed_at: new Date().toISOString() })
-          .eq("id", jobId);
-      }
+      await supabase
+        .from("import_jobs")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", jobId);
       return { ok: false, message: error.message };
     }
 
     const result = data as { ok?: boolean; count?: number };
-    if (jobId) {
-      await supabase
-        .from("import_jobs")
-        .update({
-          status: "committed",
-          valid_rows: result.count ?? rows.length,
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", jobId);
-    }
+    await supabase
+      .from("import_jobs")
+      .update({
+        status: "committed",
+        valid_rows: result.count ?? rows.length,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+
+    await supabase
+      .from("import_rows")
+      .update({ status: "imported" })
+      .eq("job_id", jobId)
+      .eq("status", "valid");
 
     return {
       ok: true,
       message: `${result.count ?? rows.length}건을 반영했습니다.`,
-      jobId: jobId || undefined,
+      jobId,
       totalRows: rows.length,
       validRows: result.count ?? rows.length,
     };
