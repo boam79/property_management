@@ -32,12 +32,14 @@ QR 사용/미사용 분류 UI (PR #5) 배포됨.
 
 ## Current Status / Progress Tracking
 
-- Executor: QR스캔 메뉴 제거 → 커밋·푸시
+- Executor: 프로덕션 검증 완료
+- Deploy READY: `dpl_58oxZpCMvWeYCrzvEgQMt9ZVWCox`
+- Admin E2E **7/7 PASS** against `https://property-management-eight-rouge.vercel.app`
+- 내비에 QR스캔 없음 확인 (`navTexts`: 자산목록, 대시보드, QR생성, 임포트, QR연결, 사용자, 감사로그)
 
 ## Executor's Feedback or Assistance Requests
 
-- QR스캔 내비 링크 제거 완료. `/scan` 페이지 자체는 URL 직접 접근용으로 남겨 둠(메뉴만 삭제 요청).
-- 사용자: 푸시 확인 요청
+- 사용자: E2E 통과 결과 확인 요청. Planner 완료 확정 가능.
 
 ## Lessons
 
