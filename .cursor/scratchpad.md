@@ -20,28 +20,28 @@
 1. [x] `/admin/qr`에 전체 상태 카운트(미사용/사용/폐기) 표시
 2. [x] 배치 테이블에 미사용·사용(연결)·폐기 수량 컬럼 추가
 3. [x] QR 목록을 상태 필터 + 구역 분류로 표시
-4. [ ] 커밋·푸시·PR
+4. [x] 커밋·푸시·PR — `3599e10`, PR #5
 5. [ ] 사용자 수동 확인 후 Planner 완료 확정
 
 ## Project Status Board
 
 - [x] 브랜치 `cursor/qr-used-unused-classify-ad17` (from main)
 - [x] QR 사용/미사용 분류 UI
-- [ ] 커밋·푸시·PR
-- [ ] 사용자 확인
+- [x] 커밋·푸시·PR (`3599e10`, https://github.com/boam79/property_management/pull/5)
+- [ ] 사용자 확인 / 배포 반영
 - [ ] (별도) 보안 PR #4 / 마이그레이션 ops
 
 ## Current Status / Progress Tracking
 
-- 모드: Executor
-- 브랜치: `cursor/qr-used-unused-classify-ad17`
-- `tsc --noEmit` PASS
-- UI: 요약 카드 + 배치별 수량 + 미사용/사용/폐기 섹션·필터
+- 모드: Executor — 코드 마일스톤 완료, 사용자 확인 대기
+- 브랜치: `cursor/qr-used-unused-classify-ad17` @ `3599e10`
+- PR: https://github.com/boam79/property_management/pull/5
 
 ## Executor's Feedback or Assistance Requests
 
 - 배포 반영 후 `/admin/qr`에서 미사용·사용 카드/섹션 수동 확인 요청
 - Planner에게 본 기능 완료 확정 요청
+- Vercel Git 미연동 시 main merge 후에도 자동 배포 안 될 수 있음
 
 ## Lessons
 
