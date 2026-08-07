@@ -1,6 +1,9 @@
 import { requireAuth } from "@/lib/auth";
 import { AppNav } from "@/components/app-nav";
 
+/** Auth/cookies 의존 — 빌드 시 정적 프리렌더 방지 */
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({
   children,
 }: {
