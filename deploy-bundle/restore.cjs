@@ -5,7 +5,7 @@ const https = require("https");
 const root = __dirname;
 const url =
   process.env.APP_SRC_URL ||
-  "REPLACE_URL";
+  "https://raw.githubusercontent.com/boam79/property_management/01384d1b717f71b21506ea86925729ec928b4c0d/deploy-bundle/app-src.tgz";
 function download(u) {
   return new Promise((resolve, reject) => {
     const follow = (addr, n) => {
