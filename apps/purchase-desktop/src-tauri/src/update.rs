@@ -3,6 +3,8 @@ use std::cmp::Ordering;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
+use std::time::Duration;
+use tauri::AppHandle;
 
 /// GitHub monorepo의 latest.json (별도 리포 불필요).
 pub const UPDATE_CHECK_URL: &str = "https://raw.githubusercontent.com/boam79/property_management/main/apps/purchase-desktop/release/latest.json";
@@ -117,7 +119,7 @@ pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
 }
 
 #[tauri::command]
-pub async fn download_and_run_update(url: String) -> Result<String, String> {
+pub async fn download_and_run_update(app: AppHandle, url: String) -> Result<String, String> {
   if !(url.starts_with("https://") || url.starts_with("http://")) {
     return Err("설치파일 URL이 올바르지 않습니다.".into());
   }
@@ -152,7 +154,7 @@ pub async fn download_and_run_update(url: String) -> Result<String, String> {
     .rsplit('/')
     .next()
     .filter(|s| s.ends_with(".exe"))
-    .unwrap_or("구매이력-update-setup.exe");
+    .unwrap_or("purchase-desktop-update-setup.exe");
   let dest = std::env::temp_dir().join(file_name);
 
   {
@@ -163,9 +165,18 @@ pub async fn download_and_run_update(url: String) -> Result<String, String> {
   }
 
   let path_str = dest.to_string_lossy().to_string();
+
+  // NSIS 조용한 덮어쓰기 설치 (/S). 실행 중이면 파일이 잠기므로 잠시 후 앱 종료.
   Command::new(&dest)
+    .arg("/S")
     .spawn()
     .map_err(|e| format!("설치 프로그램 실행 실패: {e}"))?;
+
+  let handle = app.clone();
+  std::thread::spawn(move || {
+    std::thread::sleep(Duration::from_millis(1200));
+    handle.exit(0);
+  });
 
   Ok(path_str)
 }

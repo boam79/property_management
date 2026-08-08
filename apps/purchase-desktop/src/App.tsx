@@ -322,14 +322,20 @@ export default function App() {
 
   async function onInstallUpdate() {
     if (!updateInfo?.url) return;
+    if (
+      !confirm(
+        "조용히 덮어쓰기 설치합니다. 설치가 시작되면 앱이 잠시 후 종료됩니다. 끝나면 시작 메뉴에서 다시 실행하세요."
+      )
+    ) {
+      return;
+    }
     setUpdateBusy(true);
-    setMessage("설치파일 다운로드 중…");
+    setMessage("업데이트 다운로드 중… 완료되면 앱이 종료됩니다.");
     try {
-      const path = await invoke<string>("download_and_run_update", { url: updateInfo.url });
-      setMessage(`설치 프로그램을 실행했습니다: ${path}`);
+      await invoke<string>("download_and_run_update", { url: updateInfo.url });
+      setMessage("덮어쓰기 설치 중… 앱을 종료합니다. 잠시 후 다시 실행하세요.");
     } catch (err) {
       setMessage(String(err));
-    } finally {
       setUpdateBusy(false);
     }
   }
@@ -933,7 +939,7 @@ export default function App() {
               {updateInfo?.update_available ? (
                 <>
                   <button type="button" disabled={updateBusy} onClick={() => void onInstallUpdate()}>
-                    다운로드·설치
+                    조용히 업데이트
                   </button>
                   <button
                     type="button"
@@ -960,7 +966,7 @@ export default function App() {
               </div>
             ) : (
               <p className="muted">
-                GitHub에 latest.json이 올라간 뒤부터 확인됩니다.
+                새 버전이 있으면 「조용히 업데이트」로 덮어씁니다. (설치 마법사·수동 제거 없음)
               </p>
             )}
           </section>

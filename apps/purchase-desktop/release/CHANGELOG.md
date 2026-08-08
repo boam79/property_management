@@ -3,7 +3,18 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.2** (`purchase-desktop-v0.1.2`)
+현재 최신: **0.1.3** (`purchase-desktop-v0.1.3`)
+
+---
+
+## 0.1.3 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.3](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.3)
+- **설치파일:** `purchase-desktop-0.1.3-x64-setup.exe`
+- **변경 요약**
+  - **조용한 덮어쓰기 업데이트**: NSIS `/S`로 설치 마법사·수동 언인스톨 없이 덮어씀
+  - 업데이트 시작 후 앱이 자동 종료되어 파일이 잠기지 않음
+  - 설정 버튼명: 「조용히 업데이트」
 
 ---
 
