@@ -3,7 +3,18 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.3** (`purchase-desktop-v0.1.3`)
+현재 최신: **0.1.4** (`purchase-desktop-v0.1.4`)
+
+---
+
+## 0.1.4 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.4](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.4)
+- **설치파일:** `purchase-desktop-0.1.4-x64-setup.exe`
+- **변경 요약**
+  - 통계 화면을 **한 뷰포트에 맞춤** (스크롤 없이 KPI·차트·표 표시)
+  - 중복 원형(부서 비중) 제거, 레이아웃 압축
+  - 기본 창 크기 조정 (1360×860)
 
 ---
 

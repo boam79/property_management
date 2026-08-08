@@ -5,12 +5,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -579,7 +576,7 @@ export default function App() {
       ) : null}
 
       {tab === "stats" && stats ? (
-        <div className="stats-scroll">
+        <div className="stats-fit">
           <div className="kpi-row">
             <div className="kpi">
               <span>전체</span>
@@ -591,7 +588,7 @@ export default function App() {
               <em className={stats.mom_change_pct != null && stats.mom_change_pct >= 0 ? "up" : "down"}>
                 전월 {stats.last_month.toLocaleString()}
                 {stats.mom_change_pct != null
-                  ? ` (${stats.mom_change_pct >= 0 ? "+" : ""}${stats.mom_change_pct.toFixed(1)}%)`
+                  ? ` (${stats.mom_change_pct >= 0 ? "+" : ""}${stats.mom_change_pct.toFixed(0)}%)`
                   : ""}
               </em>
             </div>
@@ -602,37 +599,29 @@ export default function App() {
             <div className="kpi">
               <span>올해</span>
               <strong>{stats.this_year.toLocaleString()}</strong>
-              <em>작년 동기 {stats.last_year_same_period.toLocaleString()}</em>
+              <em>동기 {stats.last_year_same_period.toLocaleString()}</em>
             </div>
             <div className="kpi">
               <span>고유 품목</span>
               <strong>{stats.unique_items.toLocaleString()}</strong>
             </div>
             <div className="kpi">
-              <span>부서 수</span>
+              <span>부서</span>
               <strong>{stats.unique_departments.toLocaleString()}</strong>
             </div>
             <div className="kpi">
-              <span>최근 30일 일평균</span>
+              <span>30일 평균</span>
               <strong>{stats.avg_per_day_30.toFixed(1)}</strong>
             </div>
             <div className="kpi">
               <span>최다 월</span>
-              <strong>
-                {stats.peak_month
-                  ? `${stats.peak_month.key.slice(2)}`
-                  : "—"}
-              </strong>
-              <em>
-                {stats.peak_month
-                  ? `${stats.peak_month.count.toLocaleString()}건`
-                  : ""}
-              </em>
+              <strong>{stats.peak_month ? stats.peak_month.key.slice(2) : "—"}</strong>
+              <em>{stats.peak_month ? `${stats.peak_month.count.toLocaleString()}건` : ""}</em>
             </div>
           </div>
 
-          <div className="stats-charts">
-            <section className="card chart tall">
+          <div className="stats-mid">
+            <section className="card chart">
               <h2>월별 추이</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -642,39 +631,31 @@ export default function App() {
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} width={36} tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
+                  <YAxis allowDecimals={false} width={28} tick={{ fontSize: 9 }} />
                   <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#0f766e"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
+                  <Line type="monotone" dataKey="count" stroke="#0f766e" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </section>
-
-            <section className="card chart tall">
+            <section className="card chart">
               <h2>분기별</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={stats.by_quarter.map((d) => ({
-                    name: d.key.replace(/^\d{2}/, "'"),
+                    name: d.key.slice(2),
                     count: d.count,
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} width={36} tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis allowDecimals={false} width={28} tick={{ fontSize: 9 }} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#0369a1" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count" fill="#0369a1" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </section>
-
-            <section className="card chart tall">
+            <section className="card chart">
               <h2>이번 달 일별</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -684,15 +665,14 @@ export default function App() {
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={1} />
-                  <YAxis allowDecimals={false} width={28} tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 8 }} interval={2} />
+                  <YAxis allowDecimals={false} width={24} tick={{ fontSize: 9 }} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#0f766e" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="count" fill="#0f766e" radius={[1, 1, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </section>
-
-            <section className="card chart tall">
+            <section className="card chart">
               <h2>요일별</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -702,75 +682,25 @@ export default function App() {
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} width={36} tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis allowDecimals={false} width={28} tick={{ fontSize: 9 }} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#b45309" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="count" fill="#b45309" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </section>
+          </div>
 
-            <section className="card chart tall">
-              <h2>부서별 건수</h2>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  layout="vertical"
-                  data={stats.by_dept.map((d) => ({
-                    name: d.key,
-                    count: d.count,
-                    pct:
-                      stats.total > 0
-                        ? Math.round((d.count / stats.total) * 1000) / 10
-                        : 0,
-                  }))}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" width={78} tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(value, _name, item) => {
-                      const pct = (item?.payload as { pct?: number })?.pct;
-                      return [`${value}건 (${pct ?? 0}%)`, "건수"];
-                    }}
-                  />
-                  <Bar dataKey="count" fill="#0369a1" />
-                </BarChart>
-              </ResponsiveContainer>
-            </section>
-
-            <section className="card chart tall">
-              <h2>부서 비중</h2>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.by_dept.map((d) => ({
-                      name: d.key,
-                      count: d.count,
-                    }))}
-                    dataKey="count"
-                    nameKey="name"
-                    innerRadius={45}
-                    outerRadius={75}
-                  >
-                    {stats.by_dept.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </section>
-
-            <section className="card chart wide tall">
-              <h2>최근 12개월 · 부서별 월간 (누적)</h2>
+          <div className="stats-bot">
+            <section className="card chart">
+              <h2>부서×월 (12개월)</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthDeptStacked(stats)}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} width={36} tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 8 }} interval="preserveStartEnd" />
+                  <YAxis allowDecimals={false} width={28} tick={{ fontSize: 9 }} />
                   <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Legend wrapperStyle={{ fontSize: 9 }} iconSize={8} />
                   {stats.by_dept.map((d, i) => (
                     <Bar
                       key={d.key}
@@ -782,62 +712,93 @@ export default function App() {
                 </BarChart>
               </ResponsiveContainer>
             </section>
-
-            <section className="card chart wide tall">
-              <h2>품목 상위 15</h2>
+            <section className="card chart">
+              <h2>부서별</h2>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
-                  data={stats.by_item.map((d) => ({
-                    name: d.key.length > 18 ? `${d.key.slice(0, 17)}…` : d.key,
+                  data={stats.by_dept.map((d) => ({
+                    name: d.key.length > 6 ? `${d.key.slice(0, 5)}…` : d.key,
+                    full: d.key,
+                    count: d.count,
+                    pct:
+                      stats.total > 0
+                        ? Math.round((d.count / stats.total) * 1000) / 10
+                        : 0,
+                  }))}
+                  margin={{ left: 0, right: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 9 }} />
+                  <YAxis type="category" dataKey="name" width={52} tick={{ fontSize: 9 }} />
+                  <Tooltip
+                    labelFormatter={(_, payload) =>
+                      (payload?.[0]?.payload as { full?: string })?.full ?? ""
+                    }
+                    formatter={(value, _name, item) => {
+                      const pct = (item?.payload as { pct?: number })?.pct;
+                      return [`${value}건 (${pct ?? 0}%)`, "건수"];
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#0369a1" />
+                </BarChart>
+              </ResponsiveContainer>
+            </section>
+            <section className="card chart">
+              <h2>품목 Top 8</h2>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  layout="vertical"
+                  data={stats.by_item.slice(0, 8).map((d) => ({
+                    name: d.key.length > 10 ? `${d.key.slice(0, 9)}…` : d.key,
                     full: d.key,
                     count: d.count,
                   }))}
-                  margin={{ left: 8 }}
+                  margin={{ left: 0, right: 4 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 9 }} />
+                  <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 8 }} />
                   <Tooltip
                     formatter={(value) => [`${value}건`, "건수"]}
-                    labelFormatter={(_, payload) => {
-                      const full = (payload?.[0]?.payload as { full?: string })?.full;
-                      return full ?? "";
-                    }}
+                    labelFormatter={(_, payload) =>
+                      (payload?.[0]?.payload as { full?: string })?.full ?? ""
+                    }
                   />
                   <Bar dataKey="count" fill="#4f46e5" />
                 </BarChart>
               </ResponsiveContainer>
             </section>
-
-            <section className="card table-card wide">
-              <h2>부서별 최다 구매 품목</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>부서</th>
-                    <th>최다 품목</th>
-                    <th>건수</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.top_item_by_dept.length === 0 ? (
+            <section className="card stats-top-table">
+              <h2>부서 최다 품목</h2>
+              <div className="stats-top-table-body">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan={3} className="muted">
-                        데이터 없음
-                      </td>
+                      <th>부서</th>
+                      <th>품목</th>
+                      <th>건</th>
                     </tr>
-                  ) : (
-                    stats.top_item_by_dept.map((row) => (
-                      <tr key={row.department}>
-                        <td>{row.department}</td>
-                        <td>{row.item_name}</td>
-                        <td>{row.count.toLocaleString()}</td>
+                  </thead>
+                  <tbody>
+                    {stats.top_item_by_dept.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="muted">
+                          없음
+                        </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      stats.top_item_by_dept.map((row) => (
+                        <tr key={row.department}>
+                          <td>{row.department}</td>
+                          <td title={row.item_name}>{row.item_name}</td>
+                          <td>{row.count.toLocaleString()}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
           </div>
         </div>
