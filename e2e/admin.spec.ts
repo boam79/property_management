@@ -98,7 +98,7 @@ test.describe("관리자 E2E", () => {
       fullPage: true,
     });
 
-    await expect(page.getByText("빈 QR 생성")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "빈 QR 생성" })).toBeVisible();
 
     const qty = page.getByLabel(/수량|개수|생성/).first();
     if (await qty.count()) {
