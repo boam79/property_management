@@ -35,6 +35,7 @@ export function PurchaseRowActions({ row }: { row: PurchaseHistory }) {
             name="item_name"
             defaultValue={row.item_name}
             required
+            maxLength={200}
           />
         </div>
         <div className="space-y-1">
@@ -54,6 +55,7 @@ export function PurchaseRowActions({ row }: { row: PurchaseHistory }) {
             name="department"
             defaultValue={row.department}
             required
+            maxLength={100}
           />
         </div>
         <div className="flex flex-wrap gap-2">

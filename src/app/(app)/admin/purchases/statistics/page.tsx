@@ -44,7 +44,7 @@ export default async function PurchaseStatisticsPage() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("purchase_histories")
-    .select("id, item_name, purchase_date, department, user_id, created_at, updated_at")
+    .select("id, item_name, purchase_date, department, created_at")
     .order("purchase_date", { ascending: false })
     .limit(10000);
 

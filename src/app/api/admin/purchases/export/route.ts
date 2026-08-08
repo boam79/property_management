@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { escapeIlikePattern } from "@/lib/utils";
+import { csvEscapeCell, escapeIlikePattern, isIsoDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-function csvEscape(value: string) {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
+const Q_MAX = 200;
+const DEPARTMENT_MAX = 100;
+const EXPORT_LIMIT = 5000;
 
 /**
  * GET /api/admin/purchases/export?format=csv&q=&department=&from=&to=
@@ -23,17 +20,22 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const q = url.searchParams.get("q")?.trim() ?? "";
-  const department = url.searchParams.get("department")?.trim() ?? "";
-  const from = url.searchParams.get("from")?.trim() ?? "";
-  const to = url.searchParams.get("to")?.trim() ?? "";
+  const q = (url.searchParams.get("q")?.trim() ?? "").slice(0, Q_MAX);
+  const department = (url.searchParams.get("department")?.trim() ?? "").slice(
+    0,
+    DEPARTMENT_MAX
+  );
+  const fromRaw = url.searchParams.get("from")?.trim() ?? "";
+  const toRaw = url.searchParams.get("to")?.trim() ?? "";
+  const from = fromRaw && isIsoDate(fromRaw) ? fromRaw : "";
+  const to = toRaw && isIsoDate(toRaw) ? toRaw : "";
 
   const supabase = await createClient();
   let query = supabase
     .from("purchase_histories")
     .select("item_name, purchase_date, department, created_at")
     .order("purchase_date", { ascending: false })
-    .limit(5000);
+    .limit(EXPORT_LIMIT);
 
   if (q) {
     query = query.ilike("item_name", `%${escapeIlikePattern(q)}%`);
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
   const { data, error } = await query;
   if (error) {
     console.error("[purchases export]", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Export failed" }, { status: 500 });
   }
 
   const header = ["품목", "구매일자", "사용부서", "등록일시"];
@@ -59,10 +61,10 @@ export async function GET(request: Request) {
     header.join(","),
     ...(data ?? []).map((row) =>
       [
-        csvEscape(String(row.item_name ?? "")),
-        csvEscape(String(row.purchase_date ?? "")),
-        csvEscape(String(row.department ?? "")),
-        csvEscape(String(row.created_at ?? "")),
+        csvEscapeCell(String(row.item_name ?? "")),
+        csvEscapeCell(String(row.purchase_date ?? "")),
+        csvEscapeCell(String(row.department ?? "")),
+        csvEscapeCell(String(row.created_at ?? "")),
       ].join(",")
     ),
   ];
@@ -77,6 +79,7 @@ export async function GET(request: Request) {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="purchase-histories-${stamp}.csv"`,
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

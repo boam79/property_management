@@ -15,9 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { PurchaseHistory } from "@/lib/types";
-import { cn, escapeIlikePattern } from "@/lib/utils";
+import { cn, escapeIlikePattern, isIsoDate } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
+const Q_MAX = 200;
+const DEPARTMENT_MAX = 100;
 
 function buildHref(params: Record<string, string | undefined>, page: number) {
   const sp = new URLSearchParams();
@@ -43,10 +45,12 @@ export default async function PurchasesPage({
 }) {
   await requireAdmin();
   const params = await searchParams;
-  const q = params.q?.trim() ?? "";
-  const department = params.department?.trim() ?? "";
-  const from = params.from?.trim() ?? "";
-  const to = params.to?.trim() ?? "";
+  const q = (params.q?.trim() ?? "").slice(0, Q_MAX);
+  const department = (params.department?.trim() ?? "").slice(0, DEPARTMENT_MAX);
+  const fromRaw = params.from?.trim() ?? "";
+  const toRaw = params.to?.trim() ?? "";
+  const from = fromRaw && isIsoDate(fromRaw) ? fromRaw : "";
+  const to = toRaw && isIsoDate(toRaw) ? toRaw : "";
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const rangeFrom = (page - 1) * PAGE_SIZE;
   const rangeTo = rangeFrom + PAGE_SIZE - 1;
@@ -54,7 +58,10 @@ export default async function PurchasesPage({
   const supabase = await createClient();
   let query = supabase
     .from("purchase_histories")
-    .select("*", { count: "exact" })
+    .select(
+      "id, item_name, purchase_date, department, created_at, updated_at",
+      { count: "exact" }
+    )
     .order("purchase_date", { ascending: false })
     .order("created_at", { ascending: false })
     .range(rangeFrom, rangeTo);

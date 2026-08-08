@@ -104,7 +104,8 @@ export interface PurchaseHistory {
   item_name: string;
   purchase_date: string;
   department: string;
-  user_id: string;
+  /** Omitted on list/stats selects to reduce unnecessary PII exposure. */
+  user_id?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
