@@ -3,7 +3,20 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.10** (`purchase-desktop-v0.1.10`)
+현재 최신: **0.1.11** (`purchase-desktop-v0.1.11`)
+
+---
+
+## 0.1.11 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.11](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.11)
+- **설치파일:** `purchase-desktop-0.1.11-x64-setup.exe`
+- **변경 요약**
+  - 조용한 업데이트 재실행: `.ps1`에 한글 경로 리터럴을 넣지 않음
+  - `PD_SETUP` / `PD_EXE` / `PD_WAIT_PID`를 CreateProcessW 환경변수로 전달 (유니코드 안전)
+  - 0.1.9 UTF-8 BOM 방식도 `AppData\Local\구매이력\app.exe`가 모지바케로 깨지던 문제 수정
+
+> **0.1.10 이하:** 자동 재실행이 깨진 상태일 수 있으므로 **이 setup을 한 번 수동 설치**한 뒤부터 인앱 업데이트+재실행이 정상입니다.
 
 ---
 

@@ -378,13 +378,44 @@ pub async fn download_and_run_update(app: AppHandle, url: String) -> Result<Stri
   Ok(path_str)
 }
 
-/// PowerShell 문자열 리터럴용 이스케이프 (`'` → `''`).
-fn ps_quote(path: &str) -> String {
-  path.replace('\'', "''")
+/// 재실행용 PowerShell 본문 — **ASCII만**. 경로는 스크립트에 쓰지 않고 env로 받는다.
+///
+/// 0.1.9 UTF-8 BOM + 경로 리터럴도 `구매이력` 폴더가 깨져
+/// `AppData\Local\授ɰℓ?...` 같은 File not found가 났다. CreateProcessW env는 유니코드 안전.
+fn relaunch_ps_script() -> &'static str {
+  concat!(
+    "$ErrorActionPreference = 'Continue'\r\n",
+    "$setup = $env:PD_SETUP\r\n",
+    "$exe = $env:PD_EXE\r\n",
+    "$pidToWait = [int]$env:PD_WAIT_PID\r\n",
+    "$deadline = (Get-Date).AddSeconds(90)\r\n",
+    "while ((Get-Date) -lt $deadline) {\r\n",
+    "  $alive = Get-Process -Id $pidToWait -ErrorAction SilentlyContinue\r\n",
+    "  if ($null -eq $alive) { break }\r\n",
+    "  Start-Sleep -Milliseconds 400\r\n",
+    "}\r\n",
+    "Start-Sleep -Seconds 1\r\n",
+    "if (-not $setup) { throw 'PD_SETUP missing' }\r\n",
+    "if (-not $exe) { throw 'PD_EXE missing' }\r\n",
+    "if (-not (Test-Path -LiteralPath $setup)) {\r\n",
+    "  throw ('installer missing: ' + $setup)\r\n",
+    "}\r\n",
+    "Start-Process -FilePath $setup -ArgumentList '/S' -PassThru -Wait | Out-Null\r\n",
+    "Start-Sleep -Seconds 2\r\n",
+    "if (-not (Test-Path -LiteralPath $exe)) {\r\n",
+    "  throw ('app exe missing after install: ' + $exe)\r\n",
+    "}\r\n",
+    "Start-Process -FilePath $exe\r\n",
+    "Remove-Item -LiteralPath $setup -Force -ErrorAction SilentlyContinue\r\n",
+    "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\r\n",
+  )
 }
 
-/// UTF-8 BOM 바이트로 스크립트 저장 (PowerShell -File이 한글 경로를 올바르게 읽도록).
-fn write_utf8_bom_file(path: &std::path::Path, content: &str) -> Result<(), String> {
+fn write_ascii_ps1(path: &std::path::Path, content: &str) -> Result<(), String> {
+  if !content.is_ascii() {
+    return Err("재실행 스크립트에 non-ASCII가 포함되어 있습니다.".into());
+  }
+  // BOM 없이도 ASCII만이면 안전. 기존 BOM 관례 유지를 위해 UTF-8 BOM 사용.
   let mut bytes = vec![0xEF, 0xBB, 0xBF];
   bytes.extend_from_slice(content.as_bytes());
   std::fs::write(path, bytes).map_err(|e| format!("재실행 스크립트 작성 실패: {e}"))
@@ -392,44 +423,15 @@ fn write_utf8_bom_file(path: &std::path::Path, content: &str) -> Result<(), Stri
 
 /// NSIS `/S` 설치를 기다린 뒤 동일 경로로 앱을 다시 실행하는 분리 프로세스.
 ///
-/// 한글 productName(`구매이력.exe`) 경로가 UTF-8(무BOM) .cmd에서 깨지던 문제를 피하기 위해
-/// UTF-8 BOM PowerShell 스크립트를 사용한다.
+/// 한글 install 경로(`...\구매이력\app.exe`)는 **스크립트 파일에 쓰지 않고**
+/// `PD_SETUP` / `PD_EXE` / `PD_WAIT_PID` 환경변수로만 전달한다.
 fn spawn_silent_upgrade_and_relaunch(
   setup_path: &std::path::Path,
   app_exe: &std::path::Path,
 ) -> Result<(), String> {
-  let setup = ps_quote(&setup_path.to_string_lossy());
-  let exe = ps_quote(&app_exe.to_string_lossy());
   let pid = std::process::id();
   let script_path = std::env::temp_dir().join(format!("purchase-desktop-relaunch-{pid}.ps1"));
-
-  // 1) 앱 PID 종료 대기  2) 조용히 설치(/S)  3) 짧게 대기  4) 재실행  5) 스크립트 삭제
-  let script = format!(
-    "$ErrorActionPreference = 'Continue'\r\n\
-     $setup = '{setup}'\r\n\
-     $exe = '{exe}'\r\n\
-     $pidToWait = {pid}\r\n\
-     $deadline = (Get-Date).AddSeconds(90)\r\n\
-     while ((Get-Date) -lt $deadline) {{\r\n\
-       $alive = Get-Process -Id $pidToWait -ErrorAction SilentlyContinue\r\n\
-       if ($null -eq $alive) {{ break }}\r\n\
-       Start-Sleep -Milliseconds 400\r\n\
-     }}\r\n\
-     Start-Sleep -Seconds 1\r\n\
-     if (-not (Test-Path -LiteralPath $setup)) {{\r\n\
-       throw \"installer missing: $setup\"\r\n\
-     }}\r\n\
-     $proc = Start-Process -FilePath $setup -ArgumentList '/S' -PassThru -Wait\r\n\
-     Start-Sleep -Seconds 2\r\n\
-     if (-not (Test-Path -LiteralPath $exe)) {{\r\n\
-       throw \"app exe missing after install: $exe\"\r\n\
-     }}\r\n\
-     Start-Process -FilePath $exe\r\n\
-     Remove-Item -LiteralPath $setup -Force -ErrorAction SilentlyContinue\r\n\
-     Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\r\n"
-  );
-
-  write_utf8_bom_file(&script_path, &script)?;
+  write_ascii_ps1(&script_path, relaunch_ps_script())?;
 
   #[cfg(target_os = "windows")]
   {
@@ -437,44 +439,41 @@ fn spawn_silent_upgrade_and_relaunch(
     // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB
     const FLAGS: u32 = 0x00000008 | 0x00000200 | 0x08000000 | 0x01000000;
     let script_arg = script_path.to_string_lossy().to_string();
-    let spawn_result = Command::new("powershell")
-      .args([
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-WindowStyle",
-        "Hidden",
-        "-File",
-        &script_arg,
-      ])
-      .creation_flags(FLAGS)
-      .spawn();
+    let setup_env = setup_path.as_os_str();
+    let exe_env = app_exe.as_os_str();
+    let pid_env = pid.to_string();
 
-    match spawn_result {
+    let spawn_with = |flags: u32| {
+      Command::new("powershell")
+        .args([
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-WindowStyle",
+          "Hidden",
+          "-File",
+          &script_arg,
+        ])
+        .env("PD_SETUP", setup_env)
+        .env("PD_EXE", exe_env)
+        .env("PD_WAIT_PID", &pid_env)
+        .creation_flags(flags)
+        .spawn()
+    };
+
+    match spawn_with(FLAGS) {
       Ok(_) => {}
       Err(_) => {
         // Job breakaway 불가 환경 폴백
         const FLAGS_FALLBACK: u32 = 0x00000008 | 0x00000200 | 0x08000000;
-        Command::new("powershell")
-          .args([
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-WindowStyle",
-            "Hidden",
-            "-File",
-            &script_arg,
-          ])
-          .creation_flags(FLAGS_FALLBACK)
-          .spawn()
-          .map_err(|e| format!("재실행 스크립트 시작 실패: {e}"))?;
+        spawn_with(FLAGS_FALLBACK).map_err(|e| format!("재실행 스크립트 시작 실패: {e}"))?;
       }
     }
   }
 
   #[cfg(not(target_os = "windows"))]
   {
-    let _ = (setup, exe, script_path);
+    let _ = (setup_path, app_exe, script_path);
     return Err("조용한 업데이트+재실행은 Windows에서만 지원됩니다.".into());
   }
 
@@ -510,5 +509,69 @@ mod tests {
     assert!(!is_newer("0.1.0", "0.1.0").unwrap());
     assert!(!is_newer("0.1.0", "0.1.1").unwrap());
     assert!(is_newer("1.0.0", "0.9.9").unwrap());
+  }
+
+  #[test]
+  fn relaunch_script_is_ascii_only_and_env_based() {
+    let s = relaunch_ps_script();
+    assert!(s.is_ascii(), "relaunch .ps1 must be ASCII-only");
+    assert!(s.contains("$env:PD_SETUP"));
+    assert!(s.contains("$env:PD_EXE"));
+    assert!(s.contains("$env:PD_WAIT_PID"));
+    assert!(!s.contains("$setup = '"), "must not embed setup path literals");
+    assert!(!s.contains("$exe = '"), "must not embed exe path literals");
+    // 한글·모지바케 흔적 금지
+    assert!(!s.chars().any(|c| c > '\u{7f}'));
+  }
+
+  #[test]
+  fn write_ascii_ps1_rejects_non_ascii() {
+    let path = std::env::temp_dir().join("purchase-desktop-ascii-reject-test.ps1");
+    let err = write_ascii_ps1(&path, "$x = '구매이력'\r\n").unwrap_err();
+    assert!(err.contains("non-ASCII"));
+    let _ = std::fs::remove_file(&path);
+  }
+
+  /// CreateProcessW env로 한글 경로가 PowerShell에 그대로 전달되는지 확인.
+  #[cfg(windows)]
+  #[test]
+  fn env_passes_korean_path_to_powershell() {
+    let korean_dir = std::env::temp_dir().join("구매이력-env-diag");
+    std::fs::create_dir_all(&korean_dir).expect("mkdir korean");
+    let exe_path = korean_dir.join("app.exe");
+    let out_path = std::env::temp_dir().join("purchase-desktop-env-diag-out.txt");
+    let script_path = std::env::temp_dir().join("purchase-desktop-env-diag.ps1");
+    let _ = std::fs::remove_file(&out_path);
+
+    // out_path는 Temp(ASCII). 스크립트에도 한글 리터럴 없음.
+    let script = format!(
+      "$utf8 = New-Object System.Text.UTF8Encoding $false\r\n\
+       [System.IO.File]::WriteAllText('{out}', $env:PD_EXE, $utf8)\r\n",
+      out = out_path.to_string_lossy().replace('\'', "''")
+    );
+    assert!(script.is_ascii());
+    std::fs::write(&script_path, script.as_bytes()).unwrap();
+
+    let status = Command::new("powershell")
+      .args([
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        &script_path.to_string_lossy(),
+      ])
+      .env("PD_EXE", &exe_path)
+      .status()
+      .expect("powershell spawn");
+    assert!(status.success(), "powershell exit {status}");
+
+    let got = std::fs::read_to_string(&out_path).expect("read diag out");
+    let expected = exe_path.to_string_lossy();
+    assert_eq!(got.trim(), expected.trim(), "Korean path must round-trip via env");
+    assert!(got.contains("구매이력"), "got={got:?}");
+
+    let _ = std::fs::remove_file(&script_path);
+    let _ = std::fs::remove_file(&out_path);
+    let _ = std::fs::remove_dir_all(&korean_dir);
   }
 }
