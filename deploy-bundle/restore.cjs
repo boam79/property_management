@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const root = __dirname;
-const url = process.env.APP_SRC_URL || "https://raw.githubusercontent.com/boam79/property_management/569ead3e86d79df6a039b644c8ce083e1c0e2de4/deploy-bundle/app-src.tgz";
+const url = process.env.APP_SRC_URL || "https://raw.githubusercontent.com/boam79/property_management/d8dd3bf736a6bfe7a53d250b767459f41c8196a2/deploy-bundle/app-src.tgz";
 function download(u) {
   return new Promise((resolve, reject) => {
     const follow = (addr, n) => {
