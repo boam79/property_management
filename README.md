@@ -54,6 +54,7 @@ npm run dev
 5. `20260806160000_p2_bulk_update.sql` — 일괄 변경 RPC
 6. `20260807090000_drop_asset_photos.sql` — 자산 사진 기능 제거 (권장)
 7. `20260808010000_add_medical_asset_type.sql` — 자산구분 MEDICAL(의료장비)
+8. `20260808020000_unused_qr_select_hardening.sql` — unused QR 목록 열람 제한 + get_qr_by_token
 
 Supabase SQL Editor에 붙여 넣거나 CLI로 push합니다. **ADMIN 승격**은 초기 1회 SQL로 하거나, 승격 후 앱의 **사용자** 메뉴를 사용합니다.
 

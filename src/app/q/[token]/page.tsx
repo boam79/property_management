@@ -25,14 +25,25 @@ export default async function QrTokenPage({
   }
 
   const supabase = await createClient();
-  const { data: qr, error } = await supabase
-    .from("qr_codes")
-    .select("*")
-    .eq("token", token)
-    .maybeSingle();
+  // unused QR 목록 노출 방지: exact-token RPC 우선 (마이그레이션 전 호환 fallback)
+  let qr: QrCode | null = null;
+  const { data: qrRows, error } = await supabase.rpc("get_qr_by_token", {
+    p_token: token,
+  });
 
   if (error) {
-    console.error("[q page]", error.message);
+    console.error("[q page rpc]", error.message);
+    const { data: fallback, error: fallbackErr } = await supabase
+      .from("qr_codes")
+      .select("*")
+      .eq("token", token)
+      .maybeSingle();
+    if (fallbackErr) {
+      console.error("[q page fallback]", fallbackErr.message);
+    }
+    qr = (fallback as QrCode | null) ?? null;
+  } else {
+    qr = (Array.isArray(qrRows) ? qrRows[0] : qrRows) as QrCode | null;
   }
 
   if (!qr) {
@@ -49,7 +60,7 @@ export default async function QrTokenPage({
     );
   }
 
-  const code = qr as QrCode;
+  const code = qr;
 
   if (code.status === "retired") {
     return (

@@ -84,6 +84,7 @@ export interface DashboardStats {
 export interface AssignQrResult {
   ok: boolean;
   error?: string;
+  detail?: string;
   asset_id?: string;
   existing_asset_id?: string;
 }
