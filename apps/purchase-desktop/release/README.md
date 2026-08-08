@@ -19,5 +19,5 @@
 
 ## 현재
 
-- 최신: **0.1.8** (`purchase-desktop-v0.1.8`)
-- Release: https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.8
+- 최신: **0.1.9** (`purchase-desktop-v0.1.9`)
+- Release: https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.9

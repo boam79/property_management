@@ -178,12 +178,11 @@ pub async fn download_and_run_update(app: AppHandle, url: String) -> Result<Stri
     return Err("다운로드한 파일이 너무 작습니다. URL을 확인하세요.".into());
   }
 
-  let file_name = url
-    .rsplit('/')
-    .next()
-    .filter(|s| s.ends_with(".exe"))
-    .unwrap_or("purchase-desktop-update-setup.exe");
-  let setup_path = std::env::temp_dir().join(file_name);
+  // ASCII 전용 임시 경로 — 한글 productName이 URL/파일명에 섞여도 cmd 코드페이지 깨짐 방지
+  let setup_path = std::env::temp_dir().join(format!(
+    "purchase-desktop-update-setup-{}.exe",
+    std::process::id()
+  ));
 
   {
     let mut file = File::create(&setup_path).map_err(|e| format!("임시 파일 생성 실패: {e}"))?;
@@ -200,47 +199,105 @@ pub async fn download_and_run_update(app: AppHandle, url: String) -> Result<Stri
   let handle = app.clone();
   std::thread::spawn(move || {
     // 업그레이드 스크립트가 떠 있는 뒤 종료 → 설치본이 exe를 덮어쓸 수 있음
-    std::thread::sleep(Duration::from_millis(800));
+    std::thread::sleep(Duration::from_millis(1200));
     handle.exit(0);
   });
 
   Ok(path_str)
 }
 
+/// PowerShell 문자열 리터럴용 이스케이프 (`'` → `''`).
+fn ps_quote(path: &str) -> String {
+  path.replace('\'', "''")
+}
+
+/// UTF-8 BOM 바이트로 스크립트 저장 (PowerShell -File이 한글 경로를 올바르게 읽도록).
+fn write_utf8_bom_file(path: &std::path::Path, content: &str) -> Result<(), String> {
+  let mut bytes = vec![0xEF, 0xBB, 0xBF];
+  bytes.extend_from_slice(content.as_bytes());
+  std::fs::write(path, bytes).map_err(|e| format!("재실행 스크립트 작성 실패: {e}"))
+}
+
 /// NSIS `/S` 설치를 기다린 뒤 동일 경로로 앱을 다시 실행하는 분리 프로세스.
+///
+/// 한글 productName(`구매이력.exe`) 경로가 UTF-8(무BOM) .cmd에서 깨지던 문제를 피하기 위해
+/// UTF-8 BOM PowerShell 스크립트를 사용한다.
 fn spawn_silent_upgrade_and_relaunch(
   setup_path: &std::path::Path,
   app_exe: &std::path::Path,
 ) -> Result<(), String> {
-  let setup = setup_path.to_string_lossy().replace('"', "");
-  let exe = app_exe.to_string_lossy().replace('"', "");
-  let script_path = std::env::temp_dir().join(format!(
-    "purchase-desktop-relaunch-{}.cmd",
-    std::process::id()
-  ));
+  let setup = ps_quote(&setup_path.to_string_lossy());
+  let exe = ps_quote(&app_exe.to_string_lossy());
+  let pid = std::process::id();
+  let script_path = std::env::temp_dir().join(format!("purchase-desktop-relaunch-{pid}.ps1"));
 
-  // 1) 앱 종료 대기  2) 조용히 설치  3) 짧게 대기  4) 재실행  5) 스크립트 삭제
+  // 1) 앱 PID 종료 대기  2) 조용히 설치(/S)  3) 짧게 대기  4) 재실행  5) 스크립트 삭제
   let script = format!(
-    "@echo off\r\n\
-     timeout /t 2 /nobreak >nul\r\n\
-     \"{setup}\" /S\r\n\
-     timeout /t 2 /nobreak >nul\r\n\
-     start \"\" \"{exe}\"\r\n\
-     del \"%~f0\"\r\n"
+    "$ErrorActionPreference = 'Continue'\r\n\
+     $setup = '{setup}'\r\n\
+     $exe = '{exe}'\r\n\
+     $pidToWait = {pid}\r\n\
+     $deadline = (Get-Date).AddSeconds(90)\r\n\
+     while ((Get-Date) -lt $deadline) {{\r\n\
+       $alive = Get-Process -Id $pidToWait -ErrorAction SilentlyContinue\r\n\
+       if ($null -eq $alive) {{ break }}\r\n\
+       Start-Sleep -Milliseconds 400\r\n\
+     }}\r\n\
+     Start-Sleep -Seconds 1\r\n\
+     if (-not (Test-Path -LiteralPath $setup)) {{\r\n\
+       throw \"installer missing: $setup\"\r\n\
+     }}\r\n\
+     $proc = Start-Process -FilePath $setup -ArgumentList '/S' -PassThru -Wait\r\n\
+     Start-Sleep -Seconds 2\r\n\
+     if (-not (Test-Path -LiteralPath $exe)) {{\r\n\
+       throw \"app exe missing after install: $exe\"\r\n\
+     }}\r\n\
+     Start-Process -FilePath $exe\r\n\
+     Remove-Item -LiteralPath $setup -Force -ErrorAction SilentlyContinue\r\n\
+     Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\r\n"
   );
 
-  std::fs::write(&script_path, script).map_err(|e| format!("재실행 스크립트 작성 실패: {e}"))?;
+  write_utf8_bom_file(&script_path, &script)?;
 
   #[cfg(target_os = "windows")]
   {
     use std::os::windows::process::CommandExt;
-    // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
-    const FLAGS: u32 = 0x00000008 | 0x00000200 | 0x08000000;
-    Command::new("cmd")
-      .args(["/C", &script_path.to_string_lossy()])
+    // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB
+    const FLAGS: u32 = 0x00000008 | 0x00000200 | 0x08000000 | 0x01000000;
+    let script_arg = script_path.to_string_lossy().to_string();
+    let spawn_result = Command::new("powershell")
+      .args([
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-WindowStyle",
+        "Hidden",
+        "-File",
+        &script_arg,
+      ])
       .creation_flags(FLAGS)
-      .spawn()
-      .map_err(|e| format!("재실행 스크립트 시작 실패: {e}"))?;
+      .spawn();
+
+    match spawn_result {
+      Ok(_) => {}
+      Err(_) => {
+        // Job breakaway 불가 환경 폴백
+        const FLAGS_FALLBACK: u32 = 0x00000008 | 0x00000200 | 0x08000000;
+        Command::new("powershell")
+          .args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-WindowStyle",
+            "Hidden",
+            "-File",
+            &script_arg,
+          ])
+          .creation_flags(FLAGS_FALLBACK)
+          .spawn()
+          .map_err(|e| format!("재실행 스크립트 시작 실패: {e}"))?;
+      }
+    }
   }
 
   #[cfg(not(target_os = "windows"))]

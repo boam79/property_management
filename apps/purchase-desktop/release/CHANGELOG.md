@@ -3,7 +3,17 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.8** (`purchase-desktop-v0.1.8`)
+현재 최신: **0.1.9** (`purchase-desktop-v0.1.9`)
+
+---
+
+## 0.1.9 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.9](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.9)
+- **설치파일:** `purchase-desktop-0.1.9-x64-setup.exe`
+- **변경 요약**
+  - 조용한 업데이트 후 재실행 실패 수정: UTF-8(무BOM) `.cmd`가 `구매이력` 경로를 깨뜨리던 문제를 UTF-8 BOM PowerShell로 교체
+  - 설치 파일은 ASCII 임시 경로에 저장, 앱 PID 종료 후 `/S` 설치·재실행
 
 ---
 
