@@ -254,6 +254,29 @@ async function main() {
     );
   }
 
+  // D) REGISTER unused QR 목록 조회 — 하드닝 적용 후 0건이어야 함
+  const { data: unusedList, error: listErr } = await registerAuth.client
+    .from("qr_codes")
+    .select("token, status")
+    .eq("status", "unused")
+    .limit(5);
+  const d = {
+    label: "D_register_unused_list",
+    count: unusedList?.length ?? 0,
+    error: listErr?.message ?? null,
+    pass: (unusedList?.length ?? 0) === 0,
+  };
+  report.D = d;
+  console.log("\n[D] register unused QR select", JSON.stringify(d));
+  if (!d.pass) {
+    report.findings.push(
+      "D(REGISTER unused 목록): unused 토큰 노출 — 20260808020000_unused_qr_select_hardening.sql 적용 필요"
+    );
+    if (process.env.EXPECT_HARDENED === "1") report.pass = false;
+  } else {
+    report.findings.push("D(REGISTER unused 목록): PASS — unused 토큰 비노출");
+  }
+
   console.log("\n=== REPORT ===");
   console.log(JSON.stringify(report, null, 2));
   if (!report.pass) process.exit(1);

@@ -20,25 +20,12 @@
 
 ## Current Status / Progress Tracking
 
-- Executor: REGISTER 동시 20건 등록 테스트 완료 (프로덕션 Supabase)
-- 스크립트: `scripts/register-concurrency-20.mjs`
+- Executor: 등록 UX 한글 메시지 + unused QR SELECT 하드닝 마이그레이션 추가
+- 사용자 필수: `20260808020000_unused_qr_select_hardening.sql` (+ MEDICAL 마이그레이션) Supabase 적용
 
 ## Executor's Feedback or Assistance Requests
 
-### 동시성 테스트 결과 (register@example.com, CONCURRENCY=20)
-
-| 시나리오 | 결과 | 비고 |
-|---------|------|------|
-| A 동일 QR 20경합 | PASS | ok=1, already=19, 자산 1개 |
-| B 서로 다른 QR 20병렬 | PASS | ok=20 / 617ms |
-| C 동일 자산번호 20병렬(다른 QR) | 무결성 OK | ok=1, DUPLICATE_VALUE=19, 실패 QR은 unused로 롤백 |
-| D REGISTER unused QR SELECT | **이슈** | unused 토큰 목록 조회 가능(보안 하드닝 미적용 시) |
-
-### 파악된 문제점
-1. **UX:** `DUPLICATE_VALUE`가 사용자에게 그대로 노출 (`registerAssetOnQr`)
-2. **보안:** REGISTER가 unused QR 토큰을 나열할 수 있음 → `20260807020000_intrusion_hardening.sql` 미적용 상태
-3. **운영:** 등록 계정은 QR 배치 생성 불가(설계) — 동시 등록 전 ADMIN이 unused QR을 충분히 만들어 둬야 함
-4. **경합 자체(동일 QR / 병렬 등록):** RPC 레벨에서는 문제 없음 (중복 자산·이중 연결 없음)
+- Supabase에 `20260808020000_unused_qr_select_hardening.sql` 적용 후 `EXPECT_HARDENED=1 npm run test:concurrency:register20` 로 D 검증 요청
 
 ## Lessons
 
