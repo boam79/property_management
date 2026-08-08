@@ -98,3 +98,13 @@ export interface AuditLog {
   payload: Record<string, unknown>;
   created_at: string;
 }
+
+export interface PurchaseHistory {
+  id: string;
+  item_name: string;
+  purchase_date: string;
+  department: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
