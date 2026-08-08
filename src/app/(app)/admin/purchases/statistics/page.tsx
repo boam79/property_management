@@ -60,17 +60,15 @@ export default async function PurchaseStatisticsPage() {
   const thisYear = rows.filter((r) => r.purchase_date >= yearStart).length;
 
   const byMonth = countBy(rows, (r) => r.purchase_date.slice(0, 7));
-  const byItem = countBy(rows, (r) => r.item_name).slice(0, 30);
-  const byDept = countBy(rows, (r) => r.department).slice(0, 30);
+  const byItem = countBy(rows, (r) => r.item_name).slice(0, 8);
+  const byDept = countBy(rows, (r) => r.department).slice(0, 8);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">구매통계</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            차트와 요약으로 구매 현황을 한눈에 봅니다. (최대 1만 건)
-          </p>
+    <div className="flex h-[calc(100dvh-6.75rem)] flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="text-lg font-semibold">구매통계</h1>
+          <p className="text-xs text-muted-foreground">한 화면 요약 · 최대 1만 건</p>
         </div>
         <Link
           href="/admin/purchases"
@@ -80,23 +78,18 @@ export default async function PurchaseStatisticsPage() {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard
-          label="전체 구매건수"
-          value={total}
-          hint="조회 범위 내"
-          accent="bg-teal-600"
-        />
-        <SummaryCard
+      <div className="grid shrink-0 grid-cols-3 gap-2">
+        <Kpi label="전체" value={total} hint="조회 범위" accent="bg-teal-600" />
+        <Kpi
           label="이번 달"
           value={thisMonth}
-          hint={`전체 대비 ${pct(thisMonth, total)}`}
+          hint={pct(thisMonth, total)}
           accent="bg-sky-600"
         />
-        <SummaryCard
+        <Kpi
           label="올해"
           value={thisYear}
-          hint={`전체 대비 ${pct(thisYear, total)}`}
+          hint={pct(thisYear, total)}
           accent="bg-amber-600"
         />
       </div>
@@ -110,7 +103,7 @@ export default async function PurchaseStatisticsPage() {
   );
 }
 
-function SummaryCard({
+function Kpi({
   label,
   value,
   hint,
@@ -122,12 +115,16 @@ function SummaryCard({
   accent: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-      <div className={cn("h-1", accent)} />
-      <div className="p-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+    <div className="flex items-center gap-2 overflow-hidden rounded-lg bg-card px-3 py-2 ring-1 ring-foreground/10">
+      <span className={cn("h-8 w-1 shrink-0 rounded-full", accent)} />
+      <div className="min-w-0">
+        <p className="text-[11px] leading-none text-muted-foreground">{label}</p>
+        <p className="mt-0.5 text-xl font-semibold leading-none tracking-tight">
+          {value}
+          <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+            {hint}
+          </span>
+        </p>
       </div>
     </div>
   );

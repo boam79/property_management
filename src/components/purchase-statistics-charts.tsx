@@ -45,9 +45,9 @@ export function PurchaseStatisticsCharts({
 }) {
   const monthTrend = [...byMonth]
     .sort((a, b) => a.key.localeCompare(b.key))
-    .map((d) => ({ name: d.key, count: d.count }));
+    .map((d) => ({ name: d.key.slice(2), count: d.count, full: d.key }));
 
-  const deptBars = byDept.slice(0, 12).map((d) => ({
+  const deptBars = byDept.slice(0, 8).map((d) => ({
     name: d.key,
     count: d.count,
   }));
@@ -57,125 +57,127 @@ export function PurchaseStatisticsCharts({
     count: d.count,
   }));
 
-  const itemBars = byItem.slice(0, 12).map((d) => ({
-    name: truncateLabel(d.key, 18),
+  const itemBars = byItem.slice(0, 8).map((d) => ({
+    name: truncateLabel(d.key, 14),
     fullName: d.key,
     count: d.count,
   }));
 
-  const deptChartH = Math.max(220, deptBars.length * 28);
-  const itemChartH = Math.max(220, itemBars.length * 28);
-
   return (
-    <div className="grid gap-4">
-      <ChartCard title="월별 구매 추이">
-        <EmptyOrChart empty={monthTrend.length === 0} height={220}>
-          <ResponsiveContainer width="100%" height={220}>
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 md:grid-cols-2 md:grid-rows-2">
+      <ChartCard title="월별 추이">
+        <EmptyOrChart empty={monthTrend.length === 0}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={monthTrend}
-              margin={{ top: 8, right: 12, left: 0, bottom: 4 }}
+              margin={{ top: 4, right: 8, left: -8, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-foreground/10" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} width={32} tick={{ fontSize: 12 }} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="stroke-foreground/10"
+                vertical={false}
+              />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} height={24} />
+              <YAxis allowDecimals={false} width={28} tick={{ fontSize: 11 }} />
               <Tooltip
                 formatter={(value) => [`${value as number}건`, "구매"]}
-                labelFormatter={(label) => `${label}`}
+                labelFormatter={(_, payload) => {
+                  const row = payload?.[0]?.payload as { full?: string } | undefined;
+                  return row?.full ?? "";
+                }}
               />
               <Bar
                 dataKey="count"
                 name="건수"
                 fill="#0f766e"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={48}
+                radius={[3, 3, 0, 0]}
+                maxBarSize={36}
               />
             </BarChart>
           </ResponsiveContainer>
         </EmptyOrChart>
       </ChartCard>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="부서별 구매건수">
-          <EmptyOrChart empty={deptBars.length === 0} height={deptChartH}>
-            <ResponsiveContainer width="100%" height={deptChartH}>
-              <BarChart
-                data={deptBars}
-                layout="vertical"
-                margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+      <ChartCard title="부서 비중">
+        <EmptyOrChart empty={deptPie.length === 0}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <Pie
+                data={deptPie}
+                dataKey="count"
+                nameKey="name"
+                cx="42%"
+                cy="50%"
+                innerRadius="38%"
+                outerRadius="68%"
+                paddingAngle={2}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-foreground/10"
-                  horizontal={false}
-                />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={72}
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip formatter={(value) => [`${value as number}건`, "구매"]} />
-                <Bar dataKey="count" name="건수" radius={[0, 4, 4, 0]} maxBarSize={22}>
-                  {deptBars.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </EmptyOrChart>
-        </ChartCard>
+                {deptPie.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => [`${value as number}건`, "구매"]} />
+              <Legend
+                layout="vertical"
+                align="right"
+                verticalAlign="middle"
+                wrapperStyle={{ fontSize: 11, width: 88, lineHeight: "16px" }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </EmptyOrChart>
+      </ChartCard>
 
-        <ChartCard title="부서 비중">
-          <EmptyOrChart empty={deptPie.length === 0} height={260}>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={deptPie}
-                  dataKey="count"
-                  nameKey="name"
-                  cx="50%"
-                  cy="48%"
-                  innerRadius={48}
-                  outerRadius={78}
-                  paddingAngle={2}
-                >
-                  {deptPie.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value as number}건`, "구매"]} />
-                <Legend
-                  wrapperStyle={{ fontSize: 12 }}
-                  formatter={(value) => (
-                    <span className="text-foreground">{value}</span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </EmptyOrChart>
-        </ChartCard>
-      </div>
-
-      <ChartCard title="품목별 구매횟수 (상위 12)">
-        <EmptyOrChart empty={itemBars.length === 0} height={itemChartH}>
-          <ResponsiveContainer width="100%" height={itemChartH}>
+      <ChartCard title="부서별 건수">
+        <EmptyOrChart empty={deptBars.length === 0}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={itemBars}
+              data={deptBars}
               layout="vertical"
-              margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+              margin={{ top: 0, right: 10, left: 0, bottom: 0 }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
                 className="stroke-foreground/10"
                 horizontal={false}
               />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} height={24} />
               <YAxis
                 type="category"
                 dataKey="name"
-                width={110}
+                width={64}
                 tick={{ fontSize: 11 }}
+              />
+              <Tooltip formatter={(value) => [`${value as number}건`, "구매"]} />
+              <Bar dataKey="count" name="건수" radius={[0, 3, 3, 0]} maxBarSize={16}>
+                {deptBars.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </EmptyOrChart>
+      </ChartCard>
+
+      <ChartCard title="품목 상위 8">
+        <EmptyOrChart empty={itemBars.length === 0}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={itemBars}
+              layout="vertical"
+              margin={{ top: 0, right: 10, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="stroke-foreground/10"
+                horizontal={false}
+              />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} height={24} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={88}
+                tick={{ fontSize: 10 }}
               />
               <Tooltip
                 formatter={(value) => [`${value as number}회`, "구매"]}
@@ -190,8 +192,8 @@ export function PurchaseStatisticsCharts({
                 dataKey="count"
                 name="횟수"
                 fill="#0369a1"
-                radius={[0, 4, 4, 0]}
-                maxBarSize={22}
+                radius={[0, 3, 3, 0]}
+                maxBarSize={16}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -216,11 +218,14 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <Card size="sm" className={cn(className)}>
-      <CardHeader className="pb-0">
-        <CardTitle>{title}</CardTitle>
+    <Card
+      size="sm"
+      className={cn("flex min-h-[11rem] flex-col overflow-hidden md:min-h-0", className)}
+    >
+      <CardHeader className="shrink-0 px-3 py-2">
+        <CardTitle className="text-sm">{title}</CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="min-h-0 flex-1 px-2 pb-2 pt-0">{children}</CardContent>
     </Card>
   );
 }
@@ -228,21 +233,16 @@ function ChartCard({
 function EmptyOrChart({
   empty,
   children,
-  height,
 }: {
   empty: boolean;
   children: React.ReactNode;
-  height: number;
 }) {
   if (empty) {
     return (
-      <p
-        className="flex items-center justify-center text-sm text-muted-foreground"
-        style={{ height }}
-      >
+      <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
         등록된 데이터가 없습니다
       </p>
     );
   }
-  return children;
+  return <div className="h-full w-full">{children}</div>;
 }
