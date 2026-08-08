@@ -42,13 +42,13 @@
 
 ## Current Status / Progress Tracking
 
-- 모드: **Executor** (사용자: 커밋하고 배포해)
-- GitHub main: `a7ee275` (Planner docs + deploy archive pin)
-- 기존 `property-management` MCP Production Deploy: **403**
-- 신규 배포: `qr-asset-mgr-20260808` / `dpl_rjnAz5HQhWkhKp7zx5yVKuQ5h663`
-  - https://qr-asset-mgr-20260808-ckadltmfxhrxhrxhr-5008s-projects.vercel.app (Vercel SSO 302)
-  - Inspector: https://vercel.com/ckadltmfxhrxhrxhr-5008s-projects/qr-asset-mgr-20260808/rjnAz5HQhWkhKp7zx5yVKuQ5h663
-- 기존 공개 프로덕션: https://property-management-eight-rouge.vercel.app
+- 모드: **Executor**
+- GitHub main: `c53d96a` (푸시 완료)
+- 기존 `property-management` / eight-rouge: MCP deploy **403** (권한 없음)
+- 최신 main 배포: `property-mgmt-main-c53d` / `dpl_Ezrcj8BgguzizULut1daAVFCcnKA`
+  - https://property-mgmt-main-c53d-ckadltmfxhrxhrxhr-5008s-projects.vercel.app
+  - Inspector: https://vercel.com/ckadltmfxhrxhrxhr-5008s-projects/property-mgmt-main-c53d/Ezrcj8BgguzizULut1daAVFCcnKA
+- eight-rouge에 붙이려면 사용자 Dashboard에서 도메인 이전 또는 Git 연동 Redeploy 필요
 
 ## Executor's Feedback or Assistance Requests
 
