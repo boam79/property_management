@@ -27,7 +27,22 @@ MCP `deploy_to_vercel`로 파일을 직접 올리면 페이로드 제한 때문�
 - GitHub에서 PR을 열면 Vercel이 Preview Deployment를 생성합니다.
 - Preview에도 동일 Supabase env를 쓰려면 Preview 환경에 변수를 넣으세요. (별도 스테이징 DB를 쓰려면 Preview 전용 URL/키 사용)
 
+## GitHub Actions 대체 (Dashboard Git 연동 불가 시)
+
+리포에 `.github/workflows/vercel-production.yml`이 있습니다. `main` 푸시 또는 Actions → **Vercel Production** → Run workflow 로 배포합니다.
+
+GitHub → Settings → Secrets and variables → Actions 에 추가:
+
+| Secret | 값 |
+|---|---|
+| `VERCEL_TOKEN` | Vercel → Account → Tokens |
+| `VERCEL_ORG_ID` | 팀 ID (`team_…`, Project Settings → General) |
+| `VERCEL_PROJECT_ID` | 프로젝트 ID (`prj_…`) |
+
+Install/Build는 CLI가 프로젝트 설정을 따릅니다. Dashboard에 `unpack.cjs` Install Command가 있으면 지우고 `npm install`만 두세요.
+
 ## 로컬 CLI (선택)
+
 
 이 환경의 `vercel login`이 깨질 수 있습니다. 본인 PC에서:
 
