@@ -11,6 +11,7 @@
     "test:e2e:admin": "playwright test e2e/admin.spec.ts",
     "test:e2e:qr": "playwright test e2e/qr-flow.spec.ts",
     "test:concurrency": "node --env-file=.env.local scripts/concurrency-stress.mjs",
+    "test:concurrency:register20": "node --env-file=.env.local scripts/register-concurrency-20.mjs",
     "test:dashboard-counts": "node --env-file=.env.local scripts/dashboard-count-check.mjs",
     "test:assets-pagination": "node scripts/assets-list-pagination-check.mjs",
     "test:assets-export": "node scripts/assets-export-check.mjs",
