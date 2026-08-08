@@ -3,7 +3,20 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.12** (`purchase-desktop-v0.1.12`)
+현재 최신: **0.1.13** (`purchase-desktop-v0.1.13`)
+
+---
+
+## 0.1.13 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.13](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.13)
+- **설치파일:** `purchase-desktop-0.1.13-x64-setup.exe`
+- **변경 요약**
+  - 조용한 업데이트: 앱 Job과 함께 죽지 않도록 **예약 작업(schtasks)** 으로 설치·재실행
+  - 한글 설치 경로는 `.ps1`에 **UTF-8 hex**로만 기록 (리터럴/env 깨짐 방지)
+  - 실패 시 `%TEMP%\purchase-desktop-update.log`에 기록
+
+> **0.1.12 이하:** 자동 재실행이 불안정할 수 있으므로 **이 setup을 한 번 수동 설치**한 뒤부터 인앱 업데이트가 안정적입니다.
 
 ---
 

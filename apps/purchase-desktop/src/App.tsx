@@ -85,6 +85,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.13", date: "2026-08-08", notes: "조용한 업데이트를 예약 작업으로 분리·경로 hex 전달" },
   { version: "0.1.12", date: "2026-08-08", notes: "품목·부서 드롭다운(기존 값 선택 + 신규 입력)" },
   { version: "0.1.11", date: "2026-08-08", notes: "재실행 시 한글 경로를 스크립트에 쓰지 않고 env로 전달" },
   { version: "0.1.10", date: "2026-08-08", notes: "업데이트 확인이 jsDelivr 옛 캐시에 막히지 않도록 수정" },

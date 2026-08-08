@@ -1,9 +1,14 @@
 {
-  "version": "0.1.12",
-  "notes": "품목·부서 드롭다운(기존 값 선택 + 신규 입력)",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.12/purchase-desktop-0.1.12-x64-setup.exe",
+  "version": "0.1.13",
+  "notes": "조용한 업데이트를 예약 작업으로 분리·경로 hex 전달",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.13/purchase-desktop-0.1.13-x64-setup.exe",
   "publishedAt": "2026-08-08",
   "history": [
+    {
+      "version": "0.1.13",
+      "date": "2026-08-08",
+      "notes": "조용한 업데이트를 예약 작업으로 분리·경로 hex 전달"
+    },
     {
       "version": "0.1.12",
       "date": "2026-08-08",
