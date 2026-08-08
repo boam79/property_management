@@ -3,7 +3,18 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.11** (`purchase-desktop-v0.1.11`)
+현재 최신: **0.1.12** (`purchase-desktop-v0.1.12`)
+
+---
+
+## 0.1.12 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.12](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.12)
+- **설치파일:** `purchase-desktop-0.1.12-x64-setup.exe`
+- **변경 요약**
+  - 등록·검색의 **품목·부서**를 드롭다운(datalist)으로 변경
+  - DB에 있는 기존 값에서 선택 + **새 값 직접 입력** 가능
+  - 등록/수정/삭제·CSV 가져오기 후 옵션 목록 자동 갱신
 
 ---
 

@@ -52,6 +52,12 @@ pub struct PurchaseListResult {
   pub page_size: i64,
 }
 
+#[derive(Debug, Serialize)]
+pub struct PurchaseOptions {
+  pub items: Vec<String>,
+  pub departments: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct StatPoint {
   pub key: String,
@@ -286,6 +292,39 @@ pub fn list_purchases(
 ) -> Result<PurchaseListResult, String> {
   let conn = lock_guard(&state)?;
   list_inner(&conn, &filter)
+}
+
+#[tauri::command]
+pub fn list_purchase_options(state: State<'_, DbState>) -> Result<PurchaseOptions, String> {
+  let conn = lock_guard(&state)?;
+
+  let mut item_stmt = conn
+    .prepare(
+      "SELECT DISTINCT TRIM(item_name) AS n FROM purchase_histories
+       WHERE TRIM(item_name) != ''
+       ORDER BY n COLLATE NOCASE ASC",
+    )
+    .map_err(|e| e.to_string())?;
+  let items = item_stmt
+    .query_map([], |row| row.get::<_, String>(0))
+    .map_err(|e| e.to_string())?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| e.to_string())?;
+
+  let mut dept_stmt = conn
+    .prepare(
+      "SELECT DISTINCT TRIM(department) AS n FROM purchase_histories
+       WHERE TRIM(department) != ''
+       ORDER BY n COLLATE NOCASE ASC",
+    )
+    .map_err(|e| e.to_string())?;
+  let departments = dept_stmt
+    .query_map([], |row| row.get::<_, String>(0))
+    .map_err(|e| e.to_string())?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| e.to_string())?;
+
+  Ok(PurchaseOptions { items, departments })
 }
 
 #[tauri::command]

@@ -5,8 +5,9 @@ mod update;
 use db::{get_db_info, init_db};
 use purchases::{
   backup_db, create_purchase, default_backup_path, default_stats_image_path, delete_purchase,
-  export_csv, get_auth_status, get_stats, import_csv, list_purchases, lock_session, restore_db,
-  set_password_enabled, unlock, update_purchase, write_bytes_file, write_text_file,
+  export_csv, get_auth_status, get_stats, import_csv, list_purchase_options, list_purchases,
+  lock_session, restore_db, set_password_enabled, unlock, update_purchase, write_bytes_file,
+  write_text_file,
 };
 use update::{
   check_for_update, download_and_run_update, get_app_version, get_update_check_url, open_external_url,
@@ -32,6 +33,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       get_db_info,
       list_purchases,
+      list_purchase_options,
       create_purchase,
       update_purchase,
       delete_purchase,

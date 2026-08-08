@@ -1,9 +1,14 @@
 {
-  "version": "0.1.11",
-  "notes": "재실행 시 한글 경로를 스크립트에 쓰지 않고 env로 전달",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.11/purchase-desktop-0.1.11-x64-setup.exe",
+  "version": "0.1.12",
+  "notes": "품목·부서 드롭다운(기존 값 선택 + 신규 입력)",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.12/purchase-desktop-0.1.12-x64-setup.exe",
   "publishedAt": "2026-08-08",
   "history": [
+    {
+      "version": "0.1.12",
+      "date": "2026-08-08",
+      "notes": "품목·부서 드롭다운(기존 값 선택 + 신규 입력)"
+    },
     {
       "version": "0.1.11",
       "date": "2026-08-08",

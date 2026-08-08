@@ -34,6 +34,11 @@ type ListResult = {
   page_size: number;
 };
 
+type PurchaseOptions = {
+  items: string[];
+  departments: string[];
+};
+
 type AuthStatus = { enabled: boolean; unlocked: boolean };
 
 type StatPoint = { key: string; count: number };
@@ -80,6 +85,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.12", date: "2026-08-08", notes: "품목·부서 드롭다운(기존 값 선택 + 신규 입력)" },
   { version: "0.1.11", date: "2026-08-08", notes: "재실행 시 한글 경로를 스크립트에 쓰지 않고 env로 전달" },
   { version: "0.1.10", date: "2026-08-08", notes: "업데이트 확인이 jsDelivr 옛 캐시에 막히지 않도록 수정" },
   { version: "0.1.9", date: "2026-08-08", notes: "조용한 업데이트 후 한글 경로에서도 재실행" },
@@ -144,6 +150,7 @@ export default function App() {
   const [purchaseDate, setPurchaseDate] = useState(today());
   const [dept, setDept] = useState("");
   const [editing, setEditing] = useState<Purchase | null>(null);
+  const [options, setOptions] = useState<PurchaseOptions>({ items: [], departments: [] });
 
   const [stats, setStats] = useState<Stats | null>(null);
 
@@ -181,6 +188,11 @@ export default function App() {
     setList(result);
   }, [filter]);
 
+  const refreshOptions = useCallback(async () => {
+    const result = await invoke<PurchaseOptions>("list_purchase_options");
+    setOptions(result);
+  }, []);
+
   const refreshStats = useCallback(async () => {
     const result = await invoke<Stats>("get_stats");
     setStats(result);
@@ -204,11 +216,11 @@ export default function App() {
   useEffect(() => {
     if (!auth?.unlocked) return;
     if (tab === "list") {
-      refreshList().catch((e) => setMessage(String(e)));
+      Promise.all([refreshList(), refreshOptions()]).catch((e) => setMessage(String(e)));
     } else if (tab === "stats") {
       refreshStats().catch((e) => setMessage(String(e)));
     }
-  }, [auth?.unlocked, tab, refreshList, refreshStats]);
+  }, [auth?.unlocked, tab, refreshList, refreshOptions, refreshStats]);
 
   async function onUnlock(e: FormEvent) {
     e.preventDefault();
@@ -250,7 +262,7 @@ export default function App() {
       setItemName("");
       setDept("");
       setPurchaseDate(today());
-      await refreshList();
+      await Promise.all([refreshList(), refreshOptions()]);
     } catch (err) {
       setMessage(String(err));
     }
@@ -260,7 +272,7 @@ export default function App() {
     if (!confirm("이 구매이력을 삭제할까요?")) return;
     try {
       await invoke("delete_purchase", { id });
-      await refreshList();
+      await Promise.all([refreshList(), refreshOptions()]);
     } catch (err) {
       setMessage(String(err));
     }
@@ -288,7 +300,7 @@ export default function App() {
         csvText: text,
       });
       setMessage(`가져오기: ${result.imported}건 성공, ${result.skipped}건 건너뜀`);
-      await refreshList();
+      await Promise.all([refreshList(), refreshOptions()]);
       if (tab === "stats") await refreshStats();
     } catch (err) {
       setMessage(String(err));
@@ -479,9 +491,11 @@ export default function App() {
               <label>
                 품목
                 <input
+                  list="purchase-item-options"
                   value={itemName}
                   maxLength={200}
                   required
+                  placeholder="선택 또는 입력"
                   onChange={(e) => setItemName(e.target.value)}
                 />
               </label>
@@ -497,9 +511,11 @@ export default function App() {
               <label>
                 사용부서
                 <input
+                  list="purchase-dept-options"
                   value={dept}
                   maxLength={100}
                   required
+                  placeholder="선택 또는 입력"
                   onChange={(e) => setDept(e.target.value)}
                 />
               </label>
@@ -555,14 +571,20 @@ export default function App() {
             >
               <label>
                 품목
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="부분일치" />
+                <input
+                  list="purchase-item-options"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="선택 또는 부분일치"
+                />
               </label>
               <label>
                 부서
                 <input
+                  list="purchase-dept-options"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  placeholder="부분일치"
+                  placeholder="선택 또는 부분일치"
                 />
               </label>
               <label>
@@ -575,6 +597,16 @@ export default function App() {
               </label>
               <button type="submit">적용</button>
             </form>
+            <datalist id="purchase-item-options">
+              {options.items.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+            <datalist id="purchase-dept-options">
+              {options.departments.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </section>
 
           <section className="card table-card">
@@ -965,7 +997,7 @@ export default function App() {
                       .then(async () => {
                         setMessage("복원 완료");
                         await refreshAuth();
-                        await refreshList();
+                        await Promise.all([refreshList(), refreshOptions()]);
                       })
                       .catch((err) => setMessage(String(err)));
                   }}
