@@ -18,8 +18,11 @@ loadEnv();
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const email = process.env.TEST_ADMIN_EMAIL ?? "admin@example.com";
-const password = process.env.TEST_ADMIN_PASSWORD ?? "Admin123!";
+const email = process.env.TEST_ADMIN_EMAIL;
+const password = process.env.TEST_ADMIN_PASSWORD;
+if (!email || !password) {
+  throw new Error("Set TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD (do not hardcode).");
+}
 
 async function countAssets(supabase, filters) {
   let q = supabase.from("assets").select("id", { count: "exact", head: true });

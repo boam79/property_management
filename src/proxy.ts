@@ -31,7 +31,10 @@ export async function proxy(request: NextRequest) {
       redirectParam && isSafeRedirectPath(redirectParam)
         ? redirectParam
         : "/assets";
-    const redirectResponse = NextResponse.redirect(new URL(dest, request.url));
+    // request.url 대신 origin — `/\\host` 류 해석 방지
+    const redirectResponse = NextResponse.redirect(
+      new URL(dest, request.nextUrl.origin)
+    );
     copyCookies(supabaseResponse, redirectResponse);
     return redirectResponse;
   }
