@@ -85,6 +85,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.15", date: "2026-08-08", notes: "검색 필터 초기화·선택 후 다시 수정 가능" },
   { version: "0.1.14", date: "2026-08-08", notes: "통계 이미지 저장을 초고화질(4x) PNG로" },
   { version: "0.1.13", date: "2026-08-08", notes: "조용한 업데이트를 예약 작업으로 분리·경로 hex 전달" },
   { version: "0.1.12", date: "2026-08-08", notes: "품목·부서 드롭다운(기존 값 선택 + 신규 입력)" },
@@ -578,7 +579,9 @@ export default function App() {
                   list="purchase-item-options"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
+                  onFocus={(e) => e.currentTarget.select()}
                   placeholder="선택 또는 부분일치"
+                  autoComplete="off"
                 />
               </label>
               <label>
@@ -587,7 +590,9 @@ export default function App() {
                   list="purchase-dept-options"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
+                  onFocus={(e) => e.currentTarget.select()}
                   placeholder="선택 또는 부분일치"
+                  autoComplete="off"
                 />
               </label>
               <label>
@@ -598,7 +603,23 @@ export default function App() {
                 종료일
                 <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
               </label>
-              <button type="submit">적용</button>
+              <div className="row filter-actions">
+                <button type="submit">적용</button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => {
+                    setQ("");
+                    setDepartment("");
+                    setFrom("");
+                    setTo("");
+                    setPage(1);
+                    setMessage("검색 필터를 초기화했습니다.");
+                  }}
+                >
+                  초기화
+                </button>
+              </div>
             </form>
             <datalist id="purchase-item-options">
               {options.items.map((name) => (

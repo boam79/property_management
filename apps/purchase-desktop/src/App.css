@@ -178,6 +178,15 @@ input {
   justify-content: space-between;
 }
 
+.form .filter-actions {
+  grid-column: 1 / -1;
+  margin-top: 0.15rem;
+}
+
+.form .filter-actions button {
+  min-width: 5.5rem;
+}
+
 .file-btn {
   display: inline-flex;
   align-items: center;
