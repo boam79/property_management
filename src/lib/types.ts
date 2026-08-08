@@ -99,13 +99,3 @@ export interface AuditLog {
   created_at: string;
 }
 
-export interface PurchaseHistory {
-  id: string;
-  item_name: string;
-  purchase_date: string;
-  department: string;
-  /** Omitted on list/stats selects to reduce unnecessary PII exposure. */
-  user_id?: string;
-  created_at: string;
-  updated_at?: string;
-}

@@ -52,9 +52,23 @@ pub struct PurchaseListResult {
   pub page_size: i64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct StatPoint {
   pub key: String,
+  pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeptTopItem {
+  pub department: String,
+  pub item_name: String,
+  pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MonthDeptPoint {
+  pub month: String,
+  pub department: String,
   pub count: i64,
 }
 
@@ -62,10 +76,23 @@ pub struct StatPoint {
 pub struct PurchaseStats {
   pub total: i64,
   pub this_month: i64,
+  pub last_month: i64,
+  pub mom_change_pct: Option<f64>,
   pub this_year: i64,
+  pub last_year_same_period: i64,
+  pub this_week: i64,
+  pub unique_items: i64,
+  pub unique_departments: i64,
+  pub avg_per_day_30: f64,
+  pub peak_month: Option<StatPoint>,
   pub by_month: Vec<StatPoint>,
   pub by_dept: Vec<StatPoint>,
   pub by_item: Vec<StatPoint>,
+  pub by_weekday: Vec<StatPoint>,
+  pub by_day_this_month: Vec<StatPoint>,
+  pub by_quarter: Vec<StatPoint>,
+  pub top_item_by_dept: Vec<DeptTopItem>,
+  pub by_month_dept: Vec<MonthDeptPoint>,
 }
 
 #[derive(Debug, Serialize)]
@@ -444,11 +471,30 @@ pub fn get_stats(state: State<'_, DbState>) -> Result<PurchaseStats, String> {
   let this_month: i64 = conn
     .query_row(
       "SELECT COUNT(*) FROM purchase_histories
-       WHERE purchase_date >= strftime('%Y-%m-01', 'now', 'localtime')",
+       WHERE purchase_date >= strftime('%Y-%m-01', 'now', 'localtime')
+         AND purchase_date < strftime('%Y-%m-01', 'now', 'localtime', '+1 month')",
       [],
       |r| r.get(0),
     )
     .map_err(|e| e.to_string())?;
+
+  let last_month: i64 = conn
+    .query_row(
+      "SELECT COUNT(*) FROM purchase_histories
+       WHERE purchase_date >= strftime('%Y-%m-01', 'now', 'localtime', '-1 month')
+         AND purchase_date < strftime('%Y-%m-01', 'now', 'localtime')",
+      [],
+      |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())?;
+
+  let mom_change_pct = if last_month > 0 {
+    Some(((this_month - last_month) as f64 / last_month as f64) * 100.0)
+  } else if this_month > 0 {
+    Some(100.0)
+  } else {
+    None
+  };
 
   let this_year: i64 = conn
     .query_row(
@@ -458,6 +504,52 @@ pub fn get_stats(state: State<'_, DbState>) -> Result<PurchaseStats, String> {
       |r| r.get(0),
     )
     .map_err(|e| e.to_string())?;
+
+  // 작년 동일 기간(1/1 ~ 오늘 월일)
+  let last_year_same_period: i64 = conn
+    .query_row(
+      "SELECT COUNT(*) FROM purchase_histories
+       WHERE purchase_date >= strftime('%Y-01-01', 'now', 'localtime', '-1 year')
+         AND purchase_date <= strftime('%Y-%m-%d', 'now', 'localtime', '-1 year')",
+      [],
+      |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())?;
+
+  let this_week: i64 = conn
+    .query_row(
+      "SELECT COUNT(*) FROM purchase_histories
+       WHERE purchase_date >= date('now', 'localtime', 'weekday 0', '-6 days')",
+      [],
+      |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())?;
+
+  let unique_items: i64 = conn
+    .query_row(
+      "SELECT COUNT(DISTINCT item_name) FROM purchase_histories",
+      [],
+      |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())?;
+
+  let unique_departments: i64 = conn
+    .query_row(
+      "SELECT COUNT(DISTINCT department) FROM purchase_histories",
+      [],
+      |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())?;
+
+  let last_30: i64 = conn
+    .query_row(
+      "SELECT COUNT(*) FROM purchase_histories
+       WHERE purchase_date >= date('now', 'localtime', '-29 days')",
+      [],
+      |r| r.get(0),
+    )
+    .map_err(|e| e.to_string())?;
+  let avg_per_day_30 = (last_30 as f64) / 30.0;
 
   let mut by_month = Vec::new();
   {
@@ -480,12 +572,17 @@ pub fn get_stats(state: State<'_, DbState>) -> Result<PurchaseStats, String> {
     }
   }
 
+  let peak_month = by_month
+    .iter()
+    .max_by_key(|p| p.count)
+    .cloned();
+
   let mut by_dept = Vec::new();
   {
     let mut stmt = conn
       .prepare(
         "SELECT department, COUNT(*) AS c FROM purchase_histories
-         GROUP BY department ORDER BY c DESC, department ASC LIMIT 8",
+         GROUP BY department ORDER BY c DESC, department ASC",
       )
       .map_err(|e| e.to_string())?;
     for row in stmt
@@ -506,7 +603,7 @@ pub fn get_stats(state: State<'_, DbState>) -> Result<PurchaseStats, String> {
     let mut stmt = conn
       .prepare(
         "SELECT item_name, COUNT(*) AS c FROM purchase_histories
-         GROUP BY item_name ORDER BY c DESC, item_name ASC LIMIT 8",
+         GROUP BY item_name ORDER BY c DESC, item_name ASC LIMIT 15",
       )
       .map_err(|e| e.to_string())?;
     for row in stmt
@@ -522,13 +619,158 @@ pub fn get_stats(state: State<'_, DbState>) -> Result<PurchaseStats, String> {
     }
   }
 
+  // SQLite strftime %w : 0=Sunday .. 6=Saturday → 월~일 순으로 정렬 키
+  let mut by_weekday_raw = Vec::new();
+  {
+    let mut stmt = conn
+      .prepare(
+        "SELECT CAST(strftime('%w', purchase_date) AS INTEGER) AS wd, COUNT(*) AS c
+         FROM purchase_histories GROUP BY wd",
+      )
+      .map_err(|e| e.to_string())?;
+    for row in stmt
+      .query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)))
+      .map_err(|e| e.to_string())?
+    {
+      by_weekday_raw.push(row.map_err(|e| e.to_string())?);
+    }
+  }
+  let weekday_labels = ["일", "월", "화", "수", "목", "금", "토"];
+  // 화면은 월~일
+  let order = [1, 2, 3, 4, 5, 6, 0];
+  let mut by_weekday = Vec::new();
+  for wd in order {
+    let count = by_weekday_raw
+      .iter()
+      .find(|(k, _)| *k == wd)
+      .map(|(_, c)| *c)
+      .unwrap_or(0);
+    by_weekday.push(StatPoint {
+      key: weekday_labels[wd as usize].to_string(),
+      count,
+    });
+  }
+
+  let mut by_day_this_month = Vec::new();
+  {
+    let mut stmt = conn
+      .prepare(
+        "SELECT purchase_date, COUNT(*) AS c FROM purchase_histories
+         WHERE purchase_date >= strftime('%Y-%m-01', 'now', 'localtime')
+           AND purchase_date < strftime('%Y-%m-01', 'now', 'localtime', '+1 month')
+         GROUP BY purchase_date ORDER BY purchase_date ASC",
+      )
+      .map_err(|e| e.to_string())?;
+    for row in stmt
+      .query_map([], |r| {
+        Ok(StatPoint {
+          key: r.get(0)?,
+          count: r.get(1)?,
+        })
+      })
+      .map_err(|e| e.to_string())?
+    {
+      by_day_this_month.push(row.map_err(|e| e.to_string())?);
+    }
+  }
+
+  let mut by_quarter = Vec::new();
+  {
+    let mut stmt = conn
+      .prepare(
+        "SELECT printf('%s-Q%d', substr(purchase_date,1,4),
+                ((CAST(substr(purchase_date,6,2) AS INTEGER)-1)/3)+1) AS q,
+                COUNT(*) AS c
+         FROM purchase_histories
+         GROUP BY q ORDER BY q ASC",
+      )
+      .map_err(|e| e.to_string())?;
+    for row in stmt
+      .query_map([], |r| {
+        Ok(StatPoint {
+          key: r.get(0)?,
+          count: r.get(1)?,
+        })
+      })
+      .map_err(|e| e.to_string())?
+    {
+      by_quarter.push(row.map_err(|e| e.to_string())?);
+    }
+  }
+
+  let mut top_item_by_dept = Vec::new();
+  {
+    let mut stmt = conn
+      .prepare(
+        "WITH ranked AS (
+           SELECT department, item_name, COUNT(*) AS c,
+                  ROW_NUMBER() OVER (PARTITION BY department ORDER BY COUNT(*) DESC, item_name ASC) AS rn
+           FROM purchase_histories
+           GROUP BY department, item_name
+         )
+         SELECT department, item_name, c FROM ranked WHERE rn = 1
+         ORDER BY department ASC",
+      )
+      .map_err(|e| e.to_string())?;
+    for row in stmt
+      .query_map([], |r| {
+        Ok(DeptTopItem {
+          department: r.get(0)?,
+          item_name: r.get(1)?,
+          count: r.get(2)?,
+        })
+      })
+      .map_err(|e| e.to_string())?
+    {
+      top_item_by_dept.push(row.map_err(|e| e.to_string())?);
+    }
+  }
+
+  let mut by_month_dept = Vec::new();
+  {
+    let mut stmt = conn
+      .prepare(
+        "SELECT substr(purchase_date,1,7) AS m, department, COUNT(*) AS c
+         FROM purchase_histories
+         WHERE purchase_date >= strftime('%Y-%m-01', 'now', 'localtime', '-11 months')
+         GROUP BY m, department
+         ORDER BY m ASC, department ASC",
+      )
+      .map_err(|e| e.to_string())?;
+    for row in stmt
+      .query_map([], |r| {
+        Ok(MonthDeptPoint {
+          month: r.get(0)?,
+          department: r.get(1)?,
+          count: r.get(2)?,
+        })
+      })
+      .map_err(|e| e.to_string())?
+    {
+      by_month_dept.push(row.map_err(|e| e.to_string())?);
+    }
+  }
+
   Ok(PurchaseStats {
     total,
     this_month,
+    last_month,
+    mom_change_pct,
     this_year,
+    last_year_same_period,
+    this_week,
+    unique_items,
+    unique_departments,
+    avg_per_day_30,
+    peak_month,
     by_month,
     by_dept,
     by_item,
+    by_weekday,
+    by_day_this_month,
+    by_quarter,
+    top_item_by_dept,
+    by_month_dept,
   })
 }
 
