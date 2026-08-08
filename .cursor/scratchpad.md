@@ -52,12 +52,16 @@
 
 ## Executor's Feedback or Assistance Requests
 
-(Planner) 사용자께:
-1. Supabase Auth → Allow new users to sign up **OFF**
-2. `admin@example.com` / `register@example.com` 비밀번호 교체
-3. (권장) Vercel `property-management` ← GitHub `main` Redeploy — MCP 403 우회
+(Planner/사용자) GitHub main Redeploy:
 
-추가 기능 개발이 필요하면 새 요청 + 모드(Planner/Executor)를 지정해 주세요.
+1. Vercel Dashboard 로그인 → `property-management` → Settings → Git → `boam79/property_management` 연결 → Deployments Redeploy  
+   (브라우저 자동화는 로그인 벽에서 중단됨)
+2. 또는 GitHub Actions Secrets 설정 후 Actions → **Vercel Production** 실행  
+   - 워크플로: `.github/workflows/vercel-production.yml` (`069c263`)
+3. 임시 MCP 배포(main 아카이브): `property-management-main`  
+   https://property-management-main-ckadltmfxhrxhrxhr-5008s-projects.vercel.app  
+   Inspector: https://vercel.com/ckadltmfxhrxhrxhr-5008s-projects/property-management-main/6g1vnCYNxRetph3kFyzYDEL2i8AS
+
 
 ## Lessons
 
