@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { toPng } from "html-to-image";
 import {
   Bar,
   BarChart,
@@ -79,6 +80,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.8", date: "2026-08-08", notes: "통계 화면을 PNG 이미지로 바탕화면에 저장" },
   { version: "0.1.7", date: "2026-08-08", notes: "설정에 버전 히스토리 간략 표시" },
   { version: "0.1.6", date: "2026-08-08", notes: "업데이트 확인 결과 표시 · 조회 안정화" },
   { version: "0.1.5", date: "2026-08-08", notes: "조용히 업데이트 후 자동 재실행" },
@@ -150,6 +152,8 @@ export default function App() {
   const [updateBusy, setUpdateBusy] = useState(false);
   const [updateStatus, setUpdateStatus] = useState("");
   const [versionHistory, setVersionHistory] = useState<VersionHistoryEntry[]>(FALLBACK_HISTORY);
+  const [exportBusy, setExportBusy] = useState(false);
+  const statsRef = useRef<HTMLDivElement | null>(null);
 
   const filter = useMemo(
     () => ({
@@ -377,6 +381,34 @@ export default function App() {
     } catch (err) {
       setMessage(String(err));
       setUpdateBusy(false);
+    }
+  }
+
+  async function onExportStatsImage() {
+    const el = statsRef.current;
+    if (!el) {
+      setMessage("통계 화면을 찾을 수 없습니다.");
+      return;
+    }
+    setExportBusy(true);
+    setMessage("통계 이미지 생성 중…");
+    try {
+      const dataUrl = await toPng(el, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#f4f4f5",
+      });
+      const b64 = dataUrl.split(",")[1];
+      if (!b64) throw new Error("이미지 변환 실패");
+      const bin = atob(b64);
+      const bytes = Array.from(bin, (c) => c.charCodeAt(0));
+      const dest = await invoke<string>("default_stats_image_path");
+      const saved = await invoke<string>("write_bytes_file", { path: dest, bytes });
+      setMessage(`통계 이미지를 저장했습니다: ${saved}`);
+    } catch (err) {
+      setMessage(String(err));
+    } finally {
+      setExportBusy(false);
     }
   }
 
@@ -619,7 +651,14 @@ export default function App() {
       ) : null}
 
       {tab === "stats" && stats ? (
-        <div className="stats-fit">
+        <div className="stats-panel">
+          <div className="stats-toolbar">
+            <span className="muted">통계 현황</span>
+            <button type="button" className="ghost" disabled={exportBusy} onClick={() => void onExportStatsImage()}>
+              {exportBusy ? "저장 중…" : "통계 이미지 저장"}
+            </button>
+          </div>
+          <div className="stats-fit" ref={statsRef}>
           <div className="kpi-row">
             <div className="kpi">
               <span>전체</span>
@@ -843,6 +882,7 @@ export default function App() {
                 </table>
               </div>
             </section>
+          </div>
           </div>
         </div>
       ) : null}

@@ -880,6 +880,29 @@ pub fn write_text_file(path: String, contents: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn write_bytes_file(path: String, bytes: Vec<u8>) -> Result<String, String> {
+  if bytes.is_empty() {
+    return Err("저장할 데이터가 없습니다.".into());
+  }
+  if let Some(parent) = PathBuf::from(&path).parent() {
+    if !parent.as_os_str().is_empty() {
+      fs::create_dir_all(parent).map_err(|e| format!("폴더 생성 실패: {e}"))?;
+    }
+  }
+  fs::write(&path, &bytes).map_err(|e| format!("파일 저장 실패: {e}"))?;
+  Ok(path)
+}
+
+#[tauri::command]
+pub fn default_stats_image_path() -> Result<String, String> {
+  let desktop = std::env::var("USERPROFILE")
+    .map(|h| PathBuf::from(h).join("Desktop"))
+    .unwrap_or_else(|_| PathBuf::from("."));
+  let path = desktop.join(format!("구매이력-통계-{}.png", chrono_like_now()));
+  Ok(path.display().to_string())
+}
+
+#[tauri::command]
 pub fn default_backup_path(state: State<'_, DbState>) -> Result<String, String> {
   let mut dir = state
     .path

@@ -214,6 +214,21 @@ td {
   white-space: nowrap;
 }
 
+.stats-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stats-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
 .stats-fit {
   flex: 1;
   min-height: 0;

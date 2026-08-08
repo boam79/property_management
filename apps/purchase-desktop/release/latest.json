@@ -1,9 +1,14 @@
 {
-  "version": "0.1.7",
-  "notes": "설정에 버전 히스토리 간략 표시",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.7/purchase-desktop-0.1.7-x64-setup.exe",
+  "version": "0.1.8",
+  "notes": "통계 화면을 PNG 이미지로 바탕화면에 저장",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.8/purchase-desktop-0.1.8-x64-setup.exe",
   "publishedAt": "2026-08-08",
   "history": [
+    {
+      "version": "0.1.8",
+      "date": "2026-08-08",
+      "notes": "통계 화면을 PNG 이미지로 바탕화면에 저장"
+    },
     {
       "version": "0.1.7",
       "date": "2026-08-08",

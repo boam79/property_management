@@ -3,7 +3,16 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.7** (`purchase-desktop-v0.1.7`)
+현재 최신: **0.1.8** (`purchase-desktop-v0.1.8`)
+
+---
+
+## 0.1.8 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.8](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.8)
+- **설치파일:** `purchase-desktop-0.1.8-x64-setup.exe`
+- **변경 요약**
+  - 통계 탭에서 **통계 이미지 저장** (PNG, 바탕화면)
 
 ---
 
