@@ -16,6 +16,15 @@ const UPDATE_CHECK_URLS: &[&str] = &[
 /// UI/로그용 대표 URL
 pub const UPDATE_CHECK_URL: &str = UPDATE_CHECK_URLS[0];
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct VersionHistoryEntry {
+  pub version: String,
+  #[serde(default)]
+  pub date: String,
+  #[serde(default)]
+  pub notes: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct LatestManifest {
   version: String,
@@ -24,6 +33,8 @@ struct LatestManifest {
   url: String,
   #[serde(default, rename = "publishedAt")]
   published_at: Option<String>,
+  #[serde(default)]
+  history: Vec<VersionHistoryEntry>,
 }
 
 #[derive(Debug, Serialize)]
@@ -35,6 +46,7 @@ pub struct UpdateCheckResult {
   pub update_available: bool,
   pub check_url: String,
   pub published_at: Option<String>,
+  pub history: Vec<VersionHistoryEntry>,
 }
 
 #[tauri::command]
@@ -130,6 +142,7 @@ pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
     update_available,
     check_url: used_url,
     published_at: manifest.published_at,
+    history: manifest.history,
   })
 }
 

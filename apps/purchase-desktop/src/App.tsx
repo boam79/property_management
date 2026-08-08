@@ -60,6 +60,12 @@ type Stats = {
   by_month_dept: MonthDeptPoint[];
 };
 
+type VersionHistoryEntry = {
+  version: string;
+  date: string;
+  notes: string;
+};
+
 type UpdateCheckResult = {
   current_version: string;
   latest_version: string;
@@ -68,7 +74,19 @@ type UpdateCheckResult = {
   update_available: boolean;
   check_url: string;
   published_at: string | null;
+  history: VersionHistoryEntry[];
 };
+
+/** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
+const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.7", date: "2026-08-08", notes: "설정에 버전 히스토리 간략 표시" },
+  { version: "0.1.6", date: "2026-08-08", notes: "업데이트 확인 결과 표시 · 조회 안정화" },
+  { version: "0.1.5", date: "2026-08-08", notes: "조용히 업데이트 후 자동 재실행" },
+  { version: "0.1.4", date: "2026-08-08", notes: "통계 한 화면(스크롤 없음)" },
+  { version: "0.1.3", date: "2026-08-08", notes: "조용한 덮어쓰기 업데이트" },
+  { version: "0.1.2", date: "2026-08-08", notes: "인앱 업데이트 · 통계 상세" },
+  { version: "0.1.0", date: "2026-08-08", notes: "로컬 구매이력 앱 최초 공개" },
+];
 
 const COLORS = [
   "#0f766e",
@@ -131,6 +149,7 @@ export default function App() {
   const [updateInfo, setUpdateInfo] = useState<UpdateCheckResult | null>(null);
   const [updateBusy, setUpdateBusy] = useState(false);
   const [updateStatus, setUpdateStatus] = useState("");
+  const [versionHistory, setVersionHistory] = useState<VersionHistoryEntry[]>(FALLBACK_HISTORY);
 
   const filter = useMemo(
     () => ({
@@ -299,14 +318,30 @@ export default function App() {
     }
   }
 
+  useEffect(() => {
+    if (!isTauri() || tab !== "settings") return;
+    void invoke<UpdateCheckResult>("check_for_update")
+      .then((result) => {
+        setUpdateInfo(result);
+        if (result.history?.length) {
+          setVersionHistory(result.history);
+        }
+      })
+      .catch(() => {
+        /* 설정 진입 시 백그라운드 조회 실패는 무시 — 폴백 히스토리 유지 */
+      });
+  }, [tab]);
+
   async function onCheckUpdate() {
     setUpdateBusy(true);
     setUpdateStatus("업데이트 확인 중…");
     setMessage("");
-    setUpdateInfo(null);
     try {
       const result = await invoke<UpdateCheckResult>("check_for_update");
       setUpdateInfo(result);
+      if (result.history?.length) {
+        setVersionHistory(result.history);
+      }
       if (result.update_available) {
         const msg = `새 버전 ${result.latest_version}이(가) 있습니다. (현재 ${result.current_version})`;
         setUpdateStatus(msg);
@@ -947,6 +982,21 @@ export default function App() {
                 {updateInfo.notes ? <p>{updateInfo.notes}</p> : null}
               </div>
             ) : null}
+            <div className="version-history">
+              <h3>버전 히스토리</h3>
+              <ul>
+                {versionHistory.slice(0, 8).map((h) => (
+                  <li key={h.version}>
+                    <strong>
+                      {h.version}
+                      {h.version === appVersion ? " (현재)" : ""}
+                    </strong>
+                    {h.date ? <span className="muted"> · {h.date}</span> : null}
+                    {h.notes ? <span className="hist-notes"> — {h.notes}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
         </div>
       ) : null}
