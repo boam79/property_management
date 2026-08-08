@@ -42,11 +42,13 @@
 
 ## Current Status / Progress Tracking
 
-- 모드: **Planner**
-- 판정: Cloud 블로커 해소 과제 **완료**
-- GitHub main: `fb3b1b7`
-- 프로덕션: https://property-management-eight-rouge.vercel.app
-- 다음: 사용자 운영 조치만 남음 (Executor 추가 작업 불필요 unless Redeploy/비밀번호 자동화 요청)
+- 모드: **Executor** (사용자: 커밋하고 배포해)
+- GitHub main: `a7ee275` (Planner docs + deploy archive pin)
+- 기존 `property-management` MCP Production Deploy: **403**
+- 신규 배포: `qr-asset-mgr-20260808` / `dpl_rjnAz5HQhWkhKp7zx5yVKuQ5h663`
+  - https://qr-asset-mgr-20260808-ckadltmfxhrxhrxhr-5008s-projects.vercel.app (Vercel SSO 302)
+  - Inspector: https://vercel.com/ckadltmfxhrxhrxhr-5008s-projects/qr-asset-mgr-20260808/rjnAz5HQhWkhKp7zx5yVKuQ5h663
+- 기존 공개 프로덕션: https://property-management-eight-rouge.vercel.app
 
 ## Executor's Feedback or Assistance Requests
 
