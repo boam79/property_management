@@ -321,16 +321,16 @@ export default function App() {
     if (!updateInfo?.url) return;
     if (
       !confirm(
-        "조용히 덮어쓰기 설치합니다. 설치가 시작되면 앱이 잠시 후 종료됩니다. 끝나면 시작 메뉴에서 다시 실행하세요."
+        "조용히 덮어쓰기 설치한 뒤 앱을 다시 실행합니다. 설치 중 잠시 종료됩니다."
       )
     ) {
       return;
     }
     setUpdateBusy(true);
-    setMessage("업데이트 다운로드 중… 완료되면 앱이 종료됩니다.");
+    setMessage("업데이트 다운로드 중… 설치 후 자동으로 다시 실행됩니다.");
     try {
       await invoke<string>("download_and_run_update", { url: updateInfo.url });
-      setMessage("덮어쓰기 설치 중… 앱을 종료합니다. 잠시 후 다시 실행하세요.");
+      setMessage("설치·재실행 준비 중… 앱을 종료합니다.");
     } catch (err) {
       setMessage(String(err));
       setUpdateBusy(false);
@@ -927,7 +927,7 @@ export default function App() {
               </div>
             ) : (
               <p className="muted">
-                새 버전이 있으면 「조용히 업데이트」로 덮어씁니다. (설치 마법사·수동 제거 없음)
+                새 버전이 있으면 「조용히 업데이트」로 덮어쓴 뒤 자동 재실행합니다.
               </p>
             )}
           </section>

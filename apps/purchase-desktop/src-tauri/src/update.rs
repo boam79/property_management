@@ -155,30 +155,73 @@ pub async fn download_and_run_update(app: AppHandle, url: String) -> Result<Stri
     .next()
     .filter(|s| s.ends_with(".exe"))
     .unwrap_or("purchase-desktop-update-setup.exe");
-  let dest = std::env::temp_dir().join(file_name);
+  let setup_path = std::env::temp_dir().join(file_name);
 
   {
-    let mut file = File::create(&dest).map_err(|e| format!("임시 파일 생성 실패: {e}"))?;
+    let mut file = File::create(&setup_path).map_err(|e| format!("임시 파일 생성 실패: {e}"))?;
     file
       .write_all(&bytes)
       .map_err(|e| format!("임시 파일 저장 실패: {e}"))?;
   }
 
-  let path_str = dest.to_string_lossy().to_string();
+  let app_exe = std::env::current_exe().map_err(|e| format!("실행 경로 확인 실패: {e}"))?;
+  let path_str = setup_path.to_string_lossy().to_string();
 
-  // NSIS 조용한 덮어쓰기 설치 (/S). 실행 중이면 파일이 잠기므로 잠시 후 앱 종료.
-  Command::new(&dest)
-    .arg("/S")
-    .spawn()
-    .map_err(|e| format!("설치 프로그램 실행 실패: {e}"))?;
+  spawn_silent_upgrade_and_relaunch(&setup_path, &app_exe)?;
 
   let handle = app.clone();
   std::thread::spawn(move || {
-    std::thread::sleep(Duration::from_millis(1200));
+    // 업그레이드 스크립트가 떠 있는 뒤 종료 → 설치본이 exe를 덮어쓸 수 있음
+    std::thread::sleep(Duration::from_millis(800));
     handle.exit(0);
   });
 
   Ok(path_str)
+}
+
+/// NSIS `/S` 설치를 기다린 뒤 동일 경로로 앱을 다시 실행하는 분리 프로세스.
+fn spawn_silent_upgrade_and_relaunch(
+  setup_path: &std::path::Path,
+  app_exe: &std::path::Path,
+) -> Result<(), String> {
+  let setup = setup_path.to_string_lossy().replace('"', "");
+  let exe = app_exe.to_string_lossy().replace('"', "");
+  let script_path = std::env::temp_dir().join(format!(
+    "purchase-desktop-relaunch-{}.cmd",
+    std::process::id()
+  ));
+
+  // 1) 앱 종료 대기  2) 조용히 설치  3) 짧게 대기  4) 재실행  5) 스크립트 삭제
+  let script = format!(
+    "@echo off\r\n\
+     timeout /t 2 /nobreak >nul\r\n\
+     \"{setup}\" /S\r\n\
+     timeout /t 2 /nobreak >nul\r\n\
+     start \"\" \"{exe}\"\r\n\
+     del \"%~f0\"\r\n"
+  );
+
+  std::fs::write(&script_path, script).map_err(|e| format!("재실행 스크립트 작성 실패: {e}"))?;
+
+  #[cfg(target_os = "windows")]
+  {
+    use std::os::windows::process::CommandExt;
+    // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
+    const FLAGS: u32 = 0x00000008 | 0x00000200 | 0x08000000;
+    Command::new("cmd")
+      .args(["/C", &script_path.to_string_lossy()])
+      .creation_flags(FLAGS)
+      .spawn()
+      .map_err(|e| format!("재실행 스크립트 시작 실패: {e}"))?;
+  }
+
+  #[cfg(not(target_os = "windows"))]
+  {
+    let _ = (setup, exe, script_path);
+    return Err("조용한 업데이트+재실행은 Windows에서만 지원됩니다.".into());
+  }
+
+  Ok(())
 }
 
 #[tauri::command]

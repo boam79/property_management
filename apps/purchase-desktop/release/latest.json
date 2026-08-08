@@ -1,6 +1,6 @@
 {
-  "version": "0.1.4",
-  "notes": "통계를 한 화면(스크롤 없음)에 맞춤",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.4/purchase-desktop-0.1.4-x64-setup.exe",
+  "version": "0.1.5",
+  "notes": "조용히 업데이트 후 앱 자동 재실행",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.5/purchase-desktop-0.1.5-x64-setup.exe",
   "publishedAt": "2026-08-08"
 }
