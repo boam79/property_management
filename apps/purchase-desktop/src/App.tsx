@@ -130,6 +130,7 @@ export default function App() {
   const [appVersion, setAppVersion] = useState("");
   const [updateInfo, setUpdateInfo] = useState<UpdateCheckResult | null>(null);
   const [updateBusy, setUpdateBusy] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState("");
 
   const filter = useMemo(
     () => ({
@@ -300,18 +301,25 @@ export default function App() {
 
   async function onCheckUpdate() {
     setUpdateBusy(true);
+    setUpdateStatus("업데이트 확인 중…");
     setMessage("");
     setUpdateInfo(null);
     try {
       const result = await invoke<UpdateCheckResult>("check_for_update");
       setUpdateInfo(result);
       if (result.update_available) {
-        setMessage(`새 버전 ${result.latest_version}이(가) 있습니다.`);
+        const msg = `새 버전 ${result.latest_version}이(가) 있습니다. (현재 ${result.current_version})`;
+        setUpdateStatus(msg);
+        setMessage(msg);
       } else {
-        setMessage(`최신 버전입니다. (현재 ${result.current_version})`);
+        const msg = `최신 버전입니다. (현재 ${result.current_version} · 서버 ${result.latest_version})`;
+        setUpdateStatus(msg);
+        setMessage(msg);
       }
     } catch (err) {
-      setMessage(String(err));
+      const msg = String(err);
+      setUpdateStatus(msg);
+      setMessage(msg);
     } finally {
       setUpdateBusy(false);
     }
@@ -902,34 +910,43 @@ export default function App() {
                   <button type="button" disabled={updateBusy} onClick={() => void onInstallUpdate()}>
                     조용히 업데이트
                   </button>
-                  <button
-                    type="button"
-                    className="ghost"
-                    disabled={updateBusy}
-                    onClick={() =>
-                      void invoke("open_external_url", { url: updateInfo.url }).catch((err) =>
-                        setMessage(String(err))
-                      )
-                    }
-                  >
-                    브라우저에서 열기
-                  </button>
                 </>
               ) : null}
+              <button
+                type="button"
+                className="ghost"
+                disabled={updateBusy}
+                onClick={() =>
+                  void invoke("open_external_url", {
+                    url:
+                      updateInfo?.url ||
+                      "https://github.com/boam79/property_management/releases/latest",
+                  }).catch((err) => {
+                    const msg = String(err);
+                    setUpdateStatus(msg);
+                    setMessage(msg);
+                  })
+                }
+              >
+                브라우저에서 열기
+              </button>
             </div>
+            {updateStatus ? (
+              <p className={updateInfo && !updateInfo.update_available ? "update-status ok" : "update-status"}>
+                {updateStatus}
+              </p>
+            ) : (
+              <p className="muted">「업데이트 확인」을 누르면 결과가 여기에 표시됩니다.</p>
+            )}
             {updateInfo ? (
               <div className="update-meta">
                 <p className="muted">
-                  최신: {updateInfo.latest_version}
+                  서버 최신: {updateInfo.latest_version}
                   {updateInfo.published_at ? ` · ${updateInfo.published_at}` : ""}
                 </p>
                 {updateInfo.notes ? <p>{updateInfo.notes}</p> : null}
               </div>
-            ) : (
-              <p className="muted">
-                새 버전이 있으면 「조용히 업데이트」로 덮어쓴 뒤 자동 재실행합니다.
-              </p>
-            )}
+            ) : null}
           </section>
         </div>
       ) : null}

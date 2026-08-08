@@ -1,6 +1,6 @@
 {
-  "version": "0.1.5",
-  "notes": "조용히 업데이트 후 앱 자동 재실행",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.5/purchase-desktop-0.1.5-x64-setup.exe",
+  "version": "0.1.6",
+  "notes": "업데이트 확인 피드백 강화, latest.json 조회를 jsDelivr/GitHub API로 안정화(raw CDN 캐시 회피)",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.6/purchase-desktop-0.1.6-x64-setup.exe",
   "publishedAt": "2026-08-08"
 }

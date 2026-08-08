@@ -6,8 +6,15 @@ use std::process::Command;
 use std::time::Duration;
 use tauri::AppHandle;
 
-/// GitHub monorepo의 latest.json (별도 리포 불필요).
-pub const UPDATE_CHECK_URL: &str = "https://raw.githubusercontent.com/boam79/property_management/main/apps/purchase-desktop/release/latest.json";
+/// 업데이트 매니페스트 URL (캐시 강한 raw CDN 회피: jsDelivr → GitHub API → raw).
+const UPDATE_CHECK_URLS: &[&str] = &[
+  "https://cdn.jsdelivr.net/gh/boam79/property_management@main/apps/purchase-desktop/release/latest.json",
+  "https://api.github.com/repos/boam79/property_management/contents/apps/purchase-desktop/release/latest.json?ref=main",
+  "https://raw.githubusercontent.com/boam79/property_management/main/apps/purchase-desktop/release/latest.json",
+];
+
+/// UI/로그용 대표 URL
+pub const UPDATE_CHECK_URL: &str = UPDATE_CHECK_URLS[0];
 
 #[derive(Debug, Deserialize)]
 struct LatestManifest {
@@ -79,28 +86,36 @@ pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
     .build()
     .map_err(|e| format!("HTTP 클라이언트 오류: {e}"))?;
 
-  let response = client
-    .get(UPDATE_CHECK_URL)
-    .send()
-    .await
-    .map_err(|e| {
-      format!(
-        "업데이트 정보를 가져오지 못했습니다. 네트워크 또는 게시 상태를 확인하세요. ({e})"
-      )
-    })?;
+  let mut last_err = String::from("업데이트 정보를 가져오지 못했습니다.");
+  let mut used_url = UPDATE_CHECK_URL.to_string();
+  let mut manifest: Option<LatestManifest> = None;
 
-  if !response.status().is_success() {
-    return Err(format!(
-      "업데이트 정보 HTTP {}: 아직 Releases/latest.json이 없을 수 있습니다.",
-      response.status()
-    ));
+  for url in UPDATE_CHECK_URLS {
+    let mut req = client.get(*url).header("Cache-Control", "no-cache");
+    if url.contains("api.github.com") {
+      req = req.header("Accept", "application/vnd.github.raw+json");
+    }
+    match req.send().await {
+      Ok(response) if response.status().is_success() => match response.json::<LatestManifest>().await {
+        Ok(m) => {
+          used_url = (*url).to_string();
+          manifest = Some(m);
+          break;
+        }
+        Err(e) => {
+          last_err = format!("latest.json 파싱 실패 ({url}): {e}");
+        }
+      },
+      Ok(response) => {
+        last_err = format!("업데이트 정보 HTTP {} ({url})", response.status());
+      }
+      Err(e) => {
+        last_err = format!("업데이트 정보 요청 실패 ({url}): {e}");
+      }
+    }
   }
 
-  let manifest: LatestManifest = response
-    .json()
-    .await
-    .map_err(|e| format!("latest.json 파싱 실패: {e}"))?;
-
+  let manifest = manifest.ok_or(last_err)?;
   if manifest.url.trim().is_empty() {
     return Err("latest.json에 설치파일 url이 없습니다.".into());
   }
@@ -113,7 +128,7 @@ pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
     notes: manifest.notes,
     url: manifest.url,
     update_available,
-    check_url: UPDATE_CHECK_URL.to_string(),
+    check_url: used_url,
     published_at: manifest.published_at,
   })
 }
