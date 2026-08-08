@@ -57,18 +57,6 @@ export function AppNav({ role }: { role: UserRole }) {
               >
                 감사로그
               </Link>
-              <Link
-                href="/admin/purchases"
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-              >
-                구매이력
-              </Link>
-              <Link
-                href="/admin/purchases/statistics"
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-              >
-                구매통계
-              </Link>
             </>
           ) : null}
         </nav>
