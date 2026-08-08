@@ -6,15 +6,28 @@ use std::process::Command;
 use std::time::Duration;
 use tauri::AppHandle;
 
-/// 업데이트 매니페스트 URL (캐시 강한 raw CDN 회피: jsDelivr → GitHub API → raw).
-const UPDATE_CHECK_URLS: &[&str] = &[
-  "https://cdn.jsdelivr.net/gh/boam79/property_management@main/apps/purchase-desktop/release/latest.json",
-  "https://api.github.com/repos/boam79/property_management/contents/apps/purchase-desktop/release/latest.json?ref=main",
-  "https://raw.githubusercontent.com/boam79/property_management/main/apps/purchase-desktop/release/latest.json",
-];
+const REPO: &str = "boam79/property_management";
+const MANIFEST_PATH: &str = "apps/purchase-desktop/release/latest.json";
+const RELEASES_API_URL: &str =
+  "https://api.github.com/repos/boam79/property_management/releases?per_page=30";
 
-/// UI/로그용 대표 URL
-pub const UPDATE_CHECK_URL: &str = UPDATE_CHECK_URLS[0];
+/// UI/로그용 대표 URL (GitHub Contents API — CDN 캐시 없음)
+pub const UPDATE_CHECK_URL: &str =
+  "https://api.github.com/repos/boam79/property_management/contents/apps/purchase-desktop/release/latest.json?ref=main";
+
+/// 캐시 회피: GitHub API → raw(?t=) → jsDelivr(최후, 자주 stale)
+fn manifest_check_urls() -> Vec<String> {
+  let t = std::time::SystemTime::now()
+    .duration_since(std::time::UNIX_EPOCH)
+    .map(|d| d.as_secs())
+    .unwrap_or(0);
+  vec![
+    format!("https://api.github.com/repos/{REPO}/contents/{MANIFEST_PATH}?ref=main&t={t}"),
+    format!("https://raw.githubusercontent.com/{REPO}/main/{MANIFEST_PATH}?t={t}"),
+    // jsDelivr @main 은 수 시간~일 단위로 오래될 수 있음 → 최후 수단만
+    format!("https://cdn.jsdelivr.net/gh/{REPO}@main/{MANIFEST_PATH}?t={t}"),
+  ]
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct VersionHistoryEntry {
@@ -25,7 +38,7 @@ pub struct VersionHistoryEntry {
   pub notes: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 struct LatestManifest {
   version: String,
   #[serde(default)]
@@ -89,6 +102,108 @@ fn is_newer(latest: &str, current: &str) -> Result<bool, String> {
   Ok(l.cmp(&c) == Ordering::Greater)
 }
 
+#[derive(Debug, Deserialize)]
+struct GhReleaseAsset {
+  name: String,
+  browser_download_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct GhRelease {
+  tag_name: String,
+  #[serde(default)]
+  name: String,
+  #[serde(default)]
+  body: Option<String>,
+  #[serde(default)]
+  published_at: Option<String>,
+  #[serde(default)]
+  draft: bool,
+  #[serde(default)]
+  prerelease: bool,
+  #[serde(default)]
+  assets: Vec<GhReleaseAsset>,
+}
+
+/// GitHub Releases에서 purchase-desktop-v* 최신 태그를 매니페스트로 변환.
+async fn fetch_manifest_from_releases(
+  client: &reqwest::Client,
+) -> Result<(LatestManifest, String), String> {
+  let response = client
+    .get(RELEASES_API_URL)
+    .header("Accept", "application/vnd.github+json")
+    .header("Cache-Control", "no-cache")
+    .send()
+    .await
+    .map_err(|e| format!("Releases API 요청 실패: {e}"))?;
+
+  if !response.status().is_success() {
+    return Err(format!("Releases API HTTP {}", response.status()));
+  }
+
+  let releases: Vec<GhRelease> = response
+    .json()
+    .await
+    .map_err(|e| format!("Releases API 파싱 실패: {e}"))?;
+
+  let mut best: Option<(String, (u64, u64, u64), GhRelease)> = None;
+  for rel in releases {
+    if rel.draft || rel.prerelease {
+      continue;
+    }
+    let Some(ver) = rel.tag_name.strip_prefix("purchase-desktop-v") else {
+      continue;
+    };
+    let Ok(sem) = parse_semver(ver) else {
+      continue;
+    };
+    let take = match &best {
+      None => true,
+      Some((_, prev, _)) => sem.cmp(prev) == Ordering::Greater,
+    };
+    if take {
+      best = Some((ver.to_string(), sem, rel));
+    }
+  }
+
+  let (version, _, rel) = best.ok_or_else(|| {
+    "Releases API에서 purchase-desktop 태그를 찾지 못했습니다.".to_string()
+  })?;
+
+  let setup = rel
+    .assets
+    .iter()
+    .find(|a| a.name.ends_with("-x64-setup.exe") || a.name.ends_with("_x64-setup.exe"))
+    .ok_or_else(|| format!("Release {version}에 setup.exe 에셋이 없습니다."))?;
+
+  let notes = rel
+    .body
+    .as_deref()
+    .unwrap_or("")
+    .lines()
+    .next()
+    .unwrap_or(&rel.name)
+    .trim()
+    .to_string();
+
+  let published_at = rel
+    .published_at
+    .as_deref()
+    .and_then(|s| s.get(..10))
+    .map(|s| s.to_string());
+
+  Ok((
+    LatestManifest {
+      version,
+      notes,
+      url: setup.browser_download_url.clone(),
+      published_at,
+      history: Vec::new(),
+    },
+    RELEASES_API_URL.to_string(),
+  ))
+}
+
 #[tauri::command]
 pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
   let current_version = env!("CARGO_PKG_VERSION").to_string();
@@ -102,15 +217,19 @@ pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
   let mut used_url = UPDATE_CHECK_URL.to_string();
   let mut manifest: Option<LatestManifest> = None;
 
-  for url in UPDATE_CHECK_URLS {
-    let mut req = client.get(*url).header("Cache-Control", "no-cache");
+  // 1) latest.json — GitHub Contents/raw 우선 (jsDelivr는 CDN stale 위험으로 여기서 제외)
+  for url in manifest_check_urls() {
+    if url.contains("jsdelivr.net") {
+      continue;
+    }
+    let mut req = client.get(&url).header("Cache-Control", "no-cache");
     if url.contains("api.github.com") {
       req = req.header("Accept", "application/vnd.github.raw+json");
     }
     match req.send().await {
       Ok(response) if response.status().is_success() => match response.json::<LatestManifest>().await {
         Ok(m) => {
-          used_url = (*url).to_string();
+          used_url = url;
           manifest = Some(m);
           break;
         }
@@ -123,6 +242,59 @@ pub async fn check_for_update() -> Result<UpdateCheckResult, String> {
       }
       Err(e) => {
         last_err = format!("업데이트 정보 요청 실패 ({url}): {e}");
+      }
+    }
+  }
+
+  // 2) GitHub Releases API와 교차 — 둘 중 더 높은 버전 채택 (파일/CDN 지연 방어)
+  match fetch_manifest_from_releases(&client).await {
+    Ok((from_rel, src)) => match &manifest {
+      None => {
+        used_url = src;
+        manifest = Some(from_rel);
+      }
+      Some(from_json) => {
+        if is_newer(&from_rel.version, &from_json.version).unwrap_or(false) {
+          let mut merged = from_rel;
+          merged.history = from_json.history.clone();
+          used_url = src;
+          manifest = Some(merged);
+        }
+      }
+    },
+    Err(e) => {
+      if manifest.is_none() {
+        last_err = format!("{last_err} / {e}");
+      }
+    }
+  }
+
+  // 3) 최후: jsDelivr (위가 모두 실패할 때만)
+  if manifest.is_none() {
+    for url in manifest_check_urls() {
+      if !url.contains("jsdelivr.net") {
+        continue;
+      }
+      match client
+        .get(&url)
+        .header("Cache-Control", "no-cache")
+        .send()
+        .await
+      {
+        Ok(response) if response.status().is_success() => {
+          match response.json::<LatestManifest>().await {
+            Ok(m) => {
+              used_url = url;
+              manifest = Some(m);
+              break;
+            }
+            Err(e) => last_err = format!("latest.json 파싱 실패 ({url}): {e}"),
+          }
+        }
+        Ok(response) => {
+          last_err = format!("업데이트 정보 HTTP {} ({url})", response.status());
+        }
+        Err(e) => last_err = format!("업데이트 정보 요청 실패 ({url}): {e}"),
       }
     }
   }

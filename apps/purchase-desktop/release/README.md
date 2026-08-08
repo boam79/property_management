@@ -1,8 +1,7 @@
 # 구매이력 데스크톱 릴리스 매니페스트
 
-앱은 아래 URL에서 `latest.json`을 읽습니다.
-
-`https://raw.githubusercontent.com/boam79/property_management/main/apps/purchase-desktop/release/latest.json`
+앱은 GitHub Contents API → raw(`?t=`) → (최후) jsDelivr 순으로 `latest.json`을 읽고,
+GitHub Releases API와 교차해 더 높은 `purchase-desktop-v*` 버전을 채택합니다.
 
 **버전별 변경 이력:** [CHANGELOG.md](./CHANGELOG.md)
 
@@ -19,5 +18,6 @@
 
 ## 현재
 
-- 최신: **0.1.9** (`purchase-desktop-v0.1.9`)
-- Release: https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.9
+- 최신: **0.1.10** (`purchase-desktop-v0.1.10`)
+- Release: https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.10
+- 수동 설치: https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.10/purchase-desktop-0.1.10-x64-setup.exe

@@ -3,7 +3,19 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.9** (`purchase-desktop-v0.1.9`)
+현재 최신: **0.1.10** (`purchase-desktop-v0.1.10`)
+
+---
+
+## 0.1.10 — 2026-08-08
+
+- **GitHub Release:** [purchase-desktop-v0.1.10](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.10)
+- **설치파일:** `purchase-desktop-0.1.10-x64-setup.exe`
+- **변경 요약**
+  - 업데이트 확인이 jsDelivr CDN 옛 캐시(0.1.5)에 먼저 걸려 최신을 못 보던 문제 수정
+  - GitHub Contents API → raw(`?t=`) 우선, Releases API와 교차 검증, jsDelivr는 최후 수단
+
+> **0.1.7 이하:** 앱 내 업데이트가 옛 CDN을 볼 수 있으므로 **이 setup을 한 번 수동 설치**한 뒤부터 인앱 업데이트가 정상입니다.
 
 ---
 

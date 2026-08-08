@@ -1,9 +1,14 @@
 {
-  "version": "0.1.9",
-  "notes": "조용한 업데이트 후 한글 경로에서도 재실행",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.9/purchase-desktop-0.1.9-x64-setup.exe",
+  "version": "0.1.10",
+  "notes": "업데이트 확인이 jsDelivr 옛 캐시에 막히지 않도록 수정",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.10/purchase-desktop-0.1.10-x64-setup.exe",
   "publishedAt": "2026-08-08",
   "history": [
+    {
+      "version": "0.1.10",
+      "date": "2026-08-08",
+      "notes": "업데이트 확인이 jsDelivr 옛 캐시에 막히지 않도록 수정"
+    },
     {
       "version": "0.1.9",
       "date": "2026-08-08",
