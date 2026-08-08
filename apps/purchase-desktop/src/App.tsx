@@ -85,6 +85,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.14", date: "2026-08-08", notes: "통계 이미지 저장을 초고화질(4x) PNG로" },
   { version: "0.1.13", date: "2026-08-08", notes: "조용한 업데이트를 예약 작업으로 분리·경로 hex 전달" },
   { version: "0.1.12", date: "2026-08-08", notes: "품목·부서 드롭다운(기존 값 선택 + 신규 입력)" },
   { version: "0.1.11", date: "2026-08-08", notes: "재실행 시 한글 경로를 스크립트에 쓰지 않고 env로 전달" },
@@ -407,11 +408,12 @@ export default function App() {
       return;
     }
     setExportBusy(true);
-    setMessage("통계 이미지 생성 중…");
+    setMessage("초고화질 통계 이미지 생성 중… (잠시 걸릴 수 있습니다)");
     try {
+      // 화면 대비 4배 해상도 PNG (인쇄·확대용)
       const dataUrl = await toPng(el, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: 4,
         backgroundColor: "#f4f4f5",
       });
       const b64 = dataUrl.split(",")[1];
@@ -420,7 +422,7 @@ export default function App() {
       const bytes = Array.from(bin, (c) => c.charCodeAt(0));
       const dest = await invoke<string>("default_stats_image_path");
       const saved = await invoke<string>("write_bytes_file", { path: dest, bytes });
-      setMessage(`통계 이미지를 저장했습니다: ${saved}`);
+      setMessage(`초고화질 통계 이미지를 저장했습니다: ${saved}`);
     } catch (err) {
       setMessage(String(err));
     } finally {
@@ -691,7 +693,7 @@ export default function App() {
           <div className="stats-toolbar">
             <span className="muted">통계 현황</span>
             <button type="button" className="ghost" disabled={exportBusy} onClick={() => void onExportStatsImage()}>
-              {exportBusy ? "저장 중…" : "통계 이미지 저장"}
+              {exportBusy ? "저장 중…" : "통계 이미지 저장 (초고화질)"}
             </button>
           </div>
           <div className="stats-fit" ref={statsRef}>
