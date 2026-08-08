@@ -20,11 +20,12 @@
 
 ## Current Status / Progress Tracking
 
-- Executor: 사진 기능 제거 후 커밋·푸시 진행
+- Executor: 자산구분 MEDICAL(의료장비) 추가 → 커밋·푸시
+- 사용자: `20260808010000_add_medical_asset_type.sql` Supabase 적용 필요
 
 ## Executor's Feedback or Assistance Requests
 
-- Supabase SQL Editor에서 `20260807090000_drop_asset_photos.sql` 적용 요청 (기존 사진 파일·테이블 삭제)
+- DB 마이그레이션 미적용 시 MEDICAL 저장이 check constraint에서 거부됨
 
 ## Lessons
 

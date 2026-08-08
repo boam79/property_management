@@ -65,6 +65,12 @@ async function main() {
       pick: (s) => s.total,
     },
     {
+      name: "filter MEDICAL",
+      list: { asset_type: "MEDICAL" },
+      rpc: { p_asset_type: "MEDICAL", p_status: null, p_location: null },
+      pick: (s) => s.total,
+    },
+    {
       name: "filter IN_USE",
       list: { status: "IN_USE" },
       rpc: { p_asset_type: null, p_status: "IN_USE", p_location: null },
@@ -75,6 +81,12 @@ async function main() {
       list: { asset_type: "GENERAL" },
       rpc: { p_asset_type: null, p_status: null, p_location: null },
       pick: (s) => s.general_count,
+    },
+    {
+      name: "card medical_count (no filter)",
+      list: { asset_type: "MEDICAL" },
+      rpc: { p_asset_type: null, p_status: null, p_location: null },
+      pick: (s) => s.medical_count ?? 0,
     },
     {
       name: "card unlinked",
