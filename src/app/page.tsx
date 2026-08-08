@@ -10,7 +10,7 @@ export default function Home() {
           QR 자산관리
         </h1>
         <p className="mt-2 text-sm text-zinc-600">
-          일반 비품·IT 자산 등록 및 관리 MVP
+          일반 비품·IT·의료장비 등록 및 관리 MVP
         </p>
       </div>
       <Link href="/login" className={cn(buttonVariants())}>

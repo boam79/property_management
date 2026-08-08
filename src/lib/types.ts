@@ -1,6 +1,6 @@
 export type UserRole = "REGISTER" | "ADMIN";
 
-export type AssetType = "GENERAL" | "IT";
+export type AssetType = "GENERAL" | "IT" | "MEDICAL";
 
 export type AssetStatus = "IN_USE" | "IN_STOCK" | "REPAIR" | "DISPOSED";
 
@@ -69,6 +69,7 @@ export interface DashboardStats {
   total: number;
   general_count: number;
   it_count: number;
+  medical_count: number;
   in_use_count: number;
   repair_count: number;
   unlinked_qr_count: number;

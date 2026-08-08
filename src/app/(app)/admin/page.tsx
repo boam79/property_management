@@ -57,6 +57,7 @@ export default async function AdminDashboardPage({
     total: 0,
     general_count: 0,
     it_count: 0,
+    medical_count: 0,
     in_use_count: 0,
     repair_count: 0,
     unlinked_qr_count: 0,
@@ -140,6 +141,11 @@ export default async function AdminDashboardPage({
       title: "IT 자산",
       value: stats.it_count,
       href: buildAssetsHref(params, { asset_type: "IT" }),
+    },
+    {
+      title: "의료장비",
+      value: stats.medical_count ?? 0,
+      href: buildAssetsHref(params, { asset_type: "MEDICAL" }),
     },
     {
       title: "사용 중",
@@ -298,7 +304,7 @@ export default async function AdminDashboardPage({
         </Card>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
         {cards.map((c) => (
           <Link key={c.title} href={c.href} className="group block">
             <Card

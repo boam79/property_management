@@ -154,12 +154,12 @@ export function parseImportWorkbook(buffer: ArrayBuffer): ParsedImport {
         message: "카테고리는 필수입니다.",
       });
     }
-    if (row.asset_type !== "GENERAL" && row.asset_type !== "IT") {
+    if (row.asset_type !== "GENERAL" && row.asset_type !== "IT" && row.asset_type !== "MEDICAL") {
       errors.push({
         rowNumber,
         column: "자산구분",
         code: "INVALID",
-        message: "GENERAL 또는 IT",
+        message: "GENERAL / IT / MEDICAL",
         value: row.asset_type,
       });
     }

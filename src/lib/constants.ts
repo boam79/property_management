@@ -3,6 +3,7 @@ import type { AssetStatus, AssetType } from "@/lib/types";
 export const ASSET_TYPES: { value: AssetType; label: string }[] = [
   { value: "GENERAL", label: "일반 비품" },
   { value: "IT", label: "IT 자산" },
+  { value: "MEDICAL", label: "의료장비" },
 ];
 
 export const ASSET_STATUSES: { value: AssetStatus; label: string }[] = [
@@ -15,6 +16,7 @@ export const ASSET_STATUSES: { value: AssetStatus; label: string }[] = [
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   GENERAL: "일반 비품",
   IT: "IT 자산",
+  MEDICAL: "의료장비",
 };
 
 export const ASSET_STATUS_LABELS: Record<AssetStatus, string> = {

@@ -64,6 +64,7 @@ test.describe("관리자 E2E", () => {
     await expect(page.getByRole("link", { name: /전체 자산/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /일반 비품/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /IT 자산/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /의료장비/ })).toBeVisible();
 
     const locationFilter = page.getByTestId("dashboard-location-filter");
     await expect(locationFilter).toBeVisible();
