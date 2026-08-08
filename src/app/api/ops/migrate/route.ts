@@ -113,6 +113,24 @@ export async function POST(request: Request) {
   const auth = request.headers.get("authorization") || "";
   if (!secret || auth !== `Bearer ${secret}`) return unauthorized();
 
+  let body: {
+    databaseUrl?: string;
+    supabaseAccessToken?: string;
+  } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    body = {};
+  }
+
+  // One-shot body overrides (never logged). Lets ops finish when Vercel env lacks DB URL.
+  if (typeof body.databaseUrl === "string" && body.databaseUrl.startsWith("postgres")) {
+    process.env.DATABASE_URL = body.databaseUrl;
+  }
+  if (typeof body.supabaseAccessToken === "string" && body.supabaseAccessToken.length > 10) {
+    process.env.SUPABASE_ACCESS_TOKEN = body.supabaseAccessToken;
+  }
+
   const probe = envPresence();
   const dbUrl = resolveDbUrl();
   const results: Array<Record<string, unknown>> = [];
@@ -155,7 +173,12 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       ok: allOk,
-      probe,
+      probe: {
+        ...probe,
+        // Do not echo secrets; only presence after body merge.
+        hasBodyDatabaseUrl: Boolean(body.databaseUrl),
+        hasBodyAccessToken: Boolean(body.supabaseAccessToken),
+      },
       usedDbUrl: Boolean(dbUrl),
       results,
     },
