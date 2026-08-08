@@ -1,15 +1,8 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { PurchaseStatisticsCharts } from "@/components/purchase-statistics-charts";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type { PurchaseHistory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +32,11 @@ function countBy(rows: PurchaseHistory[], keyFn: (r: PurchaseHistory) => string)
     .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key, "ko"));
 }
 
+function pct(part: number, whole: number) {
+  if (whole <= 0) return "0%";
+  return `${Math.round((part / whole) * 100)}%`;
+}
+
 export default async function PurchaseStatisticsPage() {
   await requireAdmin();
   const supabase = await createClient();
@@ -61,9 +59,7 @@ export default async function PurchaseStatisticsPage() {
   const thisMonth = rows.filter((r) => r.purchase_date >= monthStart).length;
   const thisYear = rows.filter((r) => r.purchase_date >= yearStart).length;
 
-  const byMonth = countBy(rows, (r) => r.purchase_date.slice(0, 7)).sort((a, b) =>
-    b.key.localeCompare(a.key)
-  );
+  const byMonth = countBy(rows, (r) => r.purchase_date.slice(0, 7));
   const byItem = countBy(rows, (r) => r.item_name).slice(0, 30);
   const byDept = countBy(rows, (r) => r.department).slice(0, 30);
 
@@ -73,7 +69,7 @@ export default async function PurchaseStatisticsPage() {
         <div>
           <h1 className="text-xl font-semibold">구매통계</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            구매이력 기준 집계입니다. (최대 1만 건)
+            차트와 요약으로 구매 현황을 한눈에 봅니다. (최대 1만 건)
           </p>
         </div>
         <Link
@@ -85,110 +81,53 @@ export default async function PurchaseStatisticsPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-          <p className="text-xs text-muted-foreground">전체 구매건수</p>
-          <p className="mt-1 text-2xl font-semibold">{total}</p>
-        </div>
-        <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-          <p className="text-xs text-muted-foreground">이번 달</p>
-          <p className="mt-1 text-2xl font-semibold">{thisMonth}</p>
-        </div>
-        <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-          <p className="text-xs text-muted-foreground">올해</p>
-          <p className="mt-1 text-2xl font-semibold">{thisYear}</p>
-        </div>
+        <SummaryCard
+          label="전체 구매건수"
+          value={total}
+          hint="조회 범위 내"
+          accent="bg-teal-600"
+        />
+        <SummaryCard
+          label="이번 달"
+          value={thisMonth}
+          hint={`전체 대비 ${pct(thisMonth, total)}`}
+          accent="bg-sky-600"
+        />
+        <SummaryCard
+          label="올해"
+          value={thisYear}
+          hint={`전체 대비 ${pct(thisYear, total)}`}
+          accent="bg-amber-600"
+        />
       </div>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium">월별 구매건수</h2>
-        <div className="rounded-xl bg-card ring-1 ring-foreground/10">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>월</TableHead>
-                <TableHead className="text-right">건수</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {byMonth.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={2} className="text-muted-foreground">
-                    데이터 없음
-                  </TableCell>
-                </TableRow>
-              ) : (
-                byMonth.map((r) => (
-                  <TableRow key={r.key}>
-                    <TableCell>{r.key}</TableCell>
-                    <TableCell className="text-right">{r.count}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
+      <PurchaseStatisticsCharts
+        byMonth={byMonth}
+        byDept={byDept}
+        byItem={byItem}
+      />
+    </div>
+  );
+}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium">품목별 구매횟수 (상위 30)</h2>
-          <div className="rounded-xl bg-card ring-1 ring-foreground/10">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>품목</TableHead>
-                  <TableHead className="text-right">횟수</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {byItem.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-muted-foreground">
-                      데이터 없음
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  byItem.map((r) => (
-                    <TableRow key={r.key}>
-                      <TableCell>{r.key}</TableCell>
-                      <TableCell className="text-right">{r.count}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
-
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium">부서별 구매건수 (상위 30)</h2>
-          <div className="rounded-xl bg-card ring-1 ring-foreground/10">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>부서</TableHead>
-                  <TableHead className="text-right">건수</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {byDept.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-muted-foreground">
-                      데이터 없음
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  byDept.map((r) => (
-                    <TableRow key={r.key}>
-                      <TableCell>{r.key}</TableCell>
-                      <TableCell className="text-right">{r.count}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
+function SummaryCard({
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  accent: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+      <div className={cn("h-1", accent)} />
+      <div className="p-4">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-3xl font-semibold tracking-tight">{value}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
       </div>
     </div>
   );
