@@ -2,46 +2,65 @@
 
 ## Background and Motivation
 
-사용자: 「전부 진행해」 — Cloud에서 막힌 Supabase 마이그레이션 + classify/보안 통합 + 배포·검증을 Desktop에서 일괄 진행.
+사용자: 「전부 진행해」 + 「Planner」 — Cloud 블로커(마이그레이션·통합·검증) 해소 후 Planner 교차확인·완료 여부 판정.
 
 ## Key Challenges and Analysis
 
-- Cloud는 Supabase MCP 인증 불가 → Desktop MCP로 DDL 적용 완료.
-- `storage.objects` 직접 DELETE 차단 → 사진 제거는 테이블/정책만 drop.
-- 기존 Vercel 프로젝트 `property-management`는 MCP Production Deploy 403.
-- E2E는 배포 HTTPS만.
+### Planner 교차확인 (2026-08-08)
+
+| 기준 | 결과 |
+|---|---|
+| 원격 DB 마이그레이션 (enhancements~unused_qr) | **통과** — 12개 버전 기록 |
+| classify + security → main | **통과** — `fb3b1b7` |
+| ops migrate API 제거 | **통과** |
+| 프로덕션 HTTPS E2E | **통과** — 8/8 |
+| Vercel MCP로 기존 프로젝트 재배포 | **실패(403)** — 앱은 이미 MEDICAL UI·플로우 서빙, DB는 Desktop 맞춤으로 기능 검증 OK |
+| Auth signup OFF / 시드 비밀번호 교체 | **미완(사용자 대시보드)** |
+
+### 판정
+- **고도화·Cloud 블로커 과제: 완료**로 마킹한다.
+- 남은 항목은 제품 기능이 아니라 **운영 보안 수동 조치** 2건(+권장 Redeploy 1건).
 
 ## High-level Task Breakdown
 
 1. [x] origin/main 동기화 + classify/security merge
 2. [x] 원격 DB 마이그레이션 적용
 3. [x] main 푸시 + ops migrate API 제거
-4. [~] Vercel 기존 프로젝트 재배포 — 권한 부족 (Dashboard 필요)
-5. [~] 프로덕션 E2E — 7/8 후 QR 생성 assertion 수정 중
+4. [x] 프로덕션 Playwright E2E 8/8
+5. [x] Planner 교차확인·완료 마킹
+6. [ ] (사용자) signup OFF + 시드 비밀번호 교체
+7. [ ] (선택) Vercel Git↔main Redeploy
 
 ## Project Status Board
 
-- [x] DB 마이그레이션 (enhancements/p2/intrusion/drop_photos/MEDICAL/unused_qr)
-- [x] 코드 통합 → `main` `0f645ce`+
-- [ ] Vercel `property-management` Redeploy (사용자)
-- [ ] E2E QR 배치 테스트 안정화
-- [ ] signup OFF + 시드 비밀번호 교체 (사용자)
+- [x] DB 마이그레이션 적용
+- [x] classify + security → main 푸시
+- [x] 프로덕션 E2E 8/8
+- [x] **Planner: 고도화/Cloud 블로커 과제 완료**
+- [ ] 사용자: signup OFF + 시드 비밀번호 교체
+- [ ] (선택) Vercel Git 연동 Redeploy
 
 ## Current Status / Progress Tracking
 
-- Executor 진행 중
+- 모드: **Planner**
+- 판정: Cloud 블로커 해소 과제 **완료**
+- GitHub main: `fb3b1b7`
 - 프로덕션: https://property-management-eight-rouge.vercel.app
-- QR 현장 플로우 E2E 통과 (DB hardning + get_qr_by_token 동작 확인)
+- 다음: 사용자 운영 조치만 남음 (Executor 추가 작업 불필요 unless Redeploy/비밀번호 자동화 요청)
 
 ## Executor's Feedback or Assistance Requests
 
-1. Vercel Dashboard → property-management → Git 연결/`main` Redeploy
-2. Auth signup 비활성 + 비밀번호 교체
-3. Planner 완료 확정
+(Planner) 사용자께:
+1. Supabase Auth → Allow new users to sign up **OFF**
+2. `admin@example.com` / `register@example.com` 비밀번호 교체
+3. (권장) Vercel `property-management` ← GitHub `main` Redeploy — MCP 403 우회
+
+추가 기능 개발이 필요하면 새 요청 + 모드(Planner/Executor)를 지정해 주세요.
 
 ## Lessons
 
 - storage.objects DELETE 금지
 - unpack.cjs 금지
 - Vercel MCP 재인증 후에도 기존 프로젝트 deploy 권한 없을 수 있음
-- Playwright `getByText`는 route announcer와 중복될 수 있음 → heading role 사용
+- Playwright `getByText`는 route announcer와 중복 → heading role 사용
+- Cloud DDL 블로커는 Desktop Supabase MCP로 해소 가능
