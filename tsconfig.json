@@ -30,5 +30,13 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "apps",
+    ".tmp-ab",
+    ".tmp-unpack-test",
+    ".unpack-test",
+    ".vercel-deploy-tree",
+    "e2e"
+  ]
 }
