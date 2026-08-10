@@ -22,6 +22,12 @@ export function AppNav({ role }: { role: UserRole }) {
           {isAdmin ? (
             <>
               <Link
+                href="/admin/register"
+                className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+              >
+                자산등록
+              </Link>
+              <Link
                 href="/admin"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
               >

@@ -52,6 +52,7 @@ test.describe("관리자 E2E", () => {
 
     // 관리자 메뉴가 보여야 함
     await expect(page.getByRole("link", { name: "대시보드" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "자산등록" })).toBeVisible();
     await expect(page.getByRole("link", { name: "QR생성" })).toBeVisible();
     await expect(page.getByRole("link", { name: "임포트" })).toBeVisible();
     await expect(page.getByRole("link", { name: "QR연결" })).toBeVisible();
