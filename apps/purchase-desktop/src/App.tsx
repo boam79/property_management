@@ -85,6 +85,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.16", date: "2026-08-11", notes: "구매 목록 전체 삭제" },
   { version: "0.1.15", date: "2026-08-08", notes: "검색 필터 초기화·선택 후 다시 수정 가능" },
   { version: "0.1.14", date: "2026-08-08", notes: "통계 이미지 저장을 초고화질(4x) PNG로" },
   { version: "0.1.13", date: "2026-08-08", notes: "조용한 업데이트를 예약 작업으로 분리·경로 hex 전달" },
@@ -276,6 +277,38 @@ export default function App() {
     try {
       await invoke("delete_purchase", { id });
       await Promise.all([refreshList(), refreshOptions()]);
+    } catch (err) {
+      setMessage(String(err));
+    }
+  }
+
+  async function onDeleteAllPurchases() {
+    const total = list?.total ?? 0;
+    if (
+      !confirm(
+        total > 0
+          ? `구매 목록 전체 ${total.toLocaleString()}건을 삭제할까요?\n이 작업은 되돌릴 수 없습니다.`
+          : "구매 목록 전체를 삭제할까요?\n이 작업은 되돌릴 수 없습니다."
+      )
+    ) {
+      return;
+    }
+    if (!confirm("정말로 전체 삭제할까요? 백업이 없다면 복구할 수 없습니다.")) {
+      return;
+    }
+    try {
+      const deleted = await invoke<number>("delete_all_purchases");
+      setEditing(null);
+      setItemName("");
+      setDept("");
+      setQ("");
+      setDepartment("");
+      setFrom("");
+      setTo("");
+      setPage(1);
+      setMessage(`구매 목록 ${deleted.toLocaleString()}건을 전체 삭제했습니다.`);
+      await Promise.all([refreshList(), refreshOptions()]);
+      if (tab === "stats") await refreshStats();
     } catch (err) {
       setMessage(String(err));
     }
@@ -636,7 +669,17 @@ export default function App() {
           <section className="card table-card">
             <div className="row between">
               <h2>목록</h2>
-              <span className="muted">총 {list?.total ?? 0}건</span>
+              <div className="row">
+                <span className="muted">총 {list?.total ?? 0}건</span>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={!list || list.total === 0}
+                  onClick={() => void onDeleteAllPurchases()}
+                >
+                  전체 삭제
+                </button>
+              </div>
             </div>
             <table>
               <thead>
@@ -1031,6 +1074,15 @@ export default function App() {
               </div>
             </label>
             <p className="muted path">{dbPath}</p>
+          </section>
+          <section className="card">
+            <h2>데이터 삭제</h2>
+            <p className="muted">
+              구매 목록을 모두 지웁니다. 삭제 전 DB 백업을 권장합니다.
+            </p>
+            <button type="button" className="danger" onClick={() => void onDeleteAllPurchases()}>
+              구매 목록 전체 삭제
+            </button>
           </section>
           <section className="card">
             <h2>업데이트</h2>

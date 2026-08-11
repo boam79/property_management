@@ -412,6 +412,15 @@ pub fn delete_purchase(state: State<'_, DbState>, id: String) -> Result<(), Stri
 }
 
 #[tauri::command]
+pub fn delete_all_purchases(state: State<'_, DbState>) -> Result<i64, String> {
+  let conn = lock_guard(&state)?;
+  let deleted = conn
+    .execute("DELETE FROM purchase_histories", [])
+    .map_err(|e| e.to_string())?;
+  Ok(deleted as i64)
+}
+
+#[tauri::command]
 pub fn export_csv(state: State<'_, DbState>, filter: PurchaseFilter) -> Result<String, String> {
   let conn = lock_guard(&state)?;
   let mut f = filter;
