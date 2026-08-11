@@ -3,7 +3,18 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.16** (`purchase-desktop-v0.1.16`)
+현재 최신: **0.1.17** (`purchase-desktop-v0.1.17`)
+
+---
+
+## 0.1.17 — 2026-08-11
+
+- **GitHub Release:** [purchase-desktop-v0.1.17](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.17)
+- **설치파일:** `purchase-desktop-0.1.17-x64-setup.exe`
+- **변경 요약**
+  - 품목 등록·수정에 **갯수**(1~999999)·**비고**(최대 1000자) 추가
+  - 목록·CSV 내보내기/가져오기 반영 (구 CSV 3열도 호환, 기본 갯수=1)
+  - 기존 DB는 schema_version **2**로 자동 마이그레이션
 
 ---
 

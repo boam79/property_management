@@ -26,6 +26,45 @@ fn db_file_path(app: &AppHandle) -> Result<PathBuf, String> {
   Ok(dir.join("purchases.db"))
 }
 
+fn column_exists(conn: &Connection, table: &str, column: &str) -> Result<bool, String> {
+  let mut stmt = conn
+    .prepare(&format!("PRAGMA table_info({table})"))
+    .map_err(|e| format!("table_info: {e}"))?;
+  let names = stmt
+    .query_map([], |row| row.get::<_, String>(1))
+    .map_err(|e| format!("table_info map: {e}"))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("table_info rows: {e}"))?;
+  Ok(names.iter().any(|n| n == column))
+}
+
+fn migrate_schema(conn: &Connection) -> Result<(), String> {
+  if !column_exists(conn, "purchase_histories", "quantity")? {
+    conn
+      .execute(
+        "ALTER TABLE purchase_histories ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1",
+        [],
+      )
+      .map_err(|e| format!("add quantity: {e}"))?;
+  }
+  if !column_exists(conn, "purchase_histories", "notes")? {
+    conn
+      .execute(
+        "ALTER TABLE purchase_histories ADD COLUMN notes TEXT NOT NULL DEFAULT ''",
+        [],
+      )
+      .map_err(|e| format!("add notes: {e}"))?;
+  }
+  conn
+    .execute(
+      "INSERT INTO app_meta (key, value) VALUES ('schema_version', '2')
+       ON CONFLICT(key) DO UPDATE SET value = '2'",
+      [],
+    )
+    .map_err(|e| format!("schema_version: {e}"))?;
+  Ok(())
+}
+
 pub fn open_and_migrate(path: &Path) -> Result<Connection, String> {
   let conn = Connection::open(path).map_err(|e| format!("open db: {e}"))?;
   conn
@@ -46,6 +85,10 @@ pub fn open_and_migrate(path: &Path) -> Result<Connection, String> {
           CHECK (length(purchase_date) = 10),
         department TEXT NOT NULL
           CHECK (length(trim(department)) > 0 AND length(department) <= 100),
+        quantity INTEGER NOT NULL DEFAULT 1
+          CHECK (quantity >= 1 AND quantity <= 999999),
+        notes TEXT NOT NULL DEFAULT ''
+          CHECK (length(notes) <= 1000),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -65,6 +108,7 @@ pub fn open_and_migrate(path: &Path) -> Result<Connection, String> {
       "#,
     )
     .map_err(|e| format!("migrate: {e}"))?;
+  migrate_schema(&conn)?;
   Ok(conn)
 }
 
@@ -145,7 +189,7 @@ mod tests {
 
     assert!(path.exists());
     assert!(info.table_ok);
-    assert_eq!(info.schema_version, 1);
+    assert_eq!(info.schema_version, 2);
     assert_eq!(info.row_count, 0);
 
     let _ = std::fs::remove_dir_all(dir);

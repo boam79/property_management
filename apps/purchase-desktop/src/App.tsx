@@ -23,6 +23,8 @@ type Purchase = {
   item_name: string;
   purchase_date: string;
   department: string;
+  quantity: number;
+  notes: string;
   created_at: string;
   updated_at: string;
 };
@@ -85,6 +87,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.17", date: "2026-08-11", notes: "품목 등록 시 갯수·비고 입력" },
   { version: "0.1.16", date: "2026-08-11", notes: "구매 목록 전체 삭제" },
   { version: "0.1.15", date: "2026-08-08", notes: "검색 필터 초기화·선택 후 다시 수정 가능" },
   { version: "0.1.14", date: "2026-08-08", notes: "통계 이미지 저장을 초고화질(4x) PNG로" },
@@ -153,6 +156,8 @@ export default function App() {
   const [itemName, setItemName] = useState("");
   const [purchaseDate, setPurchaseDate] = useState(today());
   const [dept, setDept] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState("");
   const [editing, setEditing] = useState<Purchase | null>(null);
   const [options, setOptions] = useState<PurchaseOptions>({ items: [], departments: [] });
 
@@ -249,6 +254,8 @@ export default function App() {
             item_name: itemName,
             purchase_date: purchaseDate,
             department: dept,
+            quantity,
+            notes,
           },
         });
         setEditing(null);
@@ -259,12 +266,16 @@ export default function App() {
             item_name: itemName,
             purchase_date: purchaseDate,
             department: dept,
+            quantity,
+            notes,
           },
         });
         setMessage("등록했습니다.");
       }
       setItemName("");
       setDept("");
+      setQuantity(1);
+      setNotes("");
       setPurchaseDate(today());
       await Promise.all([refreshList(), refreshOptions()]);
     } catch (err) {
@@ -524,7 +535,7 @@ export default function App() {
         <div className="layout">
           <section className="card">
             <h2>{editing ? "수정" : "등록"}</h2>
-            <form className="form grid3" onSubmit={onCreate}>
+            <form className="form grid-register" onSubmit={onCreate}>
               <label>
                 품목
                 <input
@@ -556,6 +567,27 @@ export default function App() {
                   onChange={(e) => setDept(e.target.value)}
                 />
               </label>
+              <label>
+                갯수
+                <input
+                  type="number"
+                  min={1}
+                  max={999999}
+                  step={1}
+                  value={quantity}
+                  required
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </label>
+              <label className="span-notes">
+                비고
+                <input
+                  value={notes}
+                  maxLength={1000}
+                  placeholder="선택 입력"
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </label>
               <div className="row">
                 <button type="submit">{editing ? "저장" : "등록"}</button>
                 {editing ? (
@@ -566,6 +598,8 @@ export default function App() {
                       setEditing(null);
                       setItemName("");
                       setDept("");
+                      setQuantity(1);
+                      setNotes("");
                       setPurchaseDate(today());
                     }}
                   >
@@ -687,13 +721,15 @@ export default function App() {
                   <th>구매일자</th>
                   <th>품목</th>
                   <th>사용부서</th>
+                  <th>갯수</th>
+                  <th>비고</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {(list?.rows ?? []).length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="muted">
+                    <td colSpan={6} className="muted">
                       구매이력이 없습니다.
                     </td>
                   </tr>
@@ -703,6 +739,8 @@ export default function App() {
                       <td>{row.purchase_date}</td>
                       <td>{row.item_name}</td>
                       <td>{row.department}</td>
+                      <td>{row.quantity ?? 1}</td>
+                      <td title={row.notes || undefined}>{row.notes || "—"}</td>
                       <td className="actions">
                         <button
                           type="button"
@@ -712,6 +750,8 @@ export default function App() {
                             setItemName(row.item_name);
                             setPurchaseDate(row.purchase_date);
                             setDept(row.department);
+                            setQuantity(row.quantity ?? 1);
+                            setNotes(row.notes ?? "");
                           }}
                         >
                           수정

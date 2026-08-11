@@ -15,6 +15,8 @@ pub struct Purchase {
   pub item_name: String,
   pub purchase_date: String,
   pub department: String,
+  pub quantity: i64,
+  pub notes: String,
   pub created_at: String,
   pub updated_at: String,
 }
@@ -24,6 +26,10 @@ pub struct PurchaseInput {
   pub item_name: String,
   pub purchase_date: String,
   pub department: String,
+  #[serde(default = "default_quantity")]
+  pub quantity: i64,
+  #[serde(default)]
+  pub notes: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -32,6 +38,14 @@ pub struct PurchaseUpdate {
   pub item_name: String,
   pub purchase_date: String,
   pub department: String,
+  #[serde(default = "default_quantity")]
+  pub quantity: i64,
+  #[serde(default)]
+  pub notes: String,
+}
+
+fn default_quantity() -> i64 {
+  1
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -113,7 +127,13 @@ pub struct ImportResult {
   pub skipped: i64,
 }
 
-fn validate_fields(item_name: &str, purchase_date: &str, department: &str) -> Result<(), String> {
+fn validate_fields(
+  item_name: &str,
+  purchase_date: &str,
+  department: &str,
+  quantity: i64,
+  notes: &str,
+) -> Result<(), String> {
   let item = item_name.trim();
   let dept = department.trim();
   let date = purchase_date.trim();
@@ -128,6 +148,12 @@ fn validate_fields(item_name: &str, purchase_date: &str, department: &str) -> Re
   }
   if date.len() != 10 || date.as_bytes()[4] != b'-' || date.as_bytes()[7] != b'-' {
     return Err("구매일자 형식이 올바르지 않습니다.".into());
+  }
+  if !(1..=999_999).contains(&quantity) {
+    return Err("갯수는 1~999999 사이여야 합니다.".into());
+  }
+  if notes.chars().count() > 1000 {
+    return Err("비고는 1000자 이하여야 합니다.".into());
   }
   Ok(())
 }
@@ -168,8 +194,10 @@ fn map_purchase(row: &rusqlite::Row<'_>) -> rusqlite::Result<Purchase> {
     item_name: row.get(1)?,
     purchase_date: row.get(2)?,
     department: row.get(3)?,
-    created_at: row.get(4)?,
-    updated_at: row.get(5)?,
+    quantity: row.get(4)?,
+    notes: row.get(5)?,
+    created_at: row.get(6)?,
+    updated_at: row.get(7)?,
   })
 }
 
@@ -238,7 +266,7 @@ fn list_inner(conn: &Connection, filter: &PurchaseFilter) -> Result<PurchaseList
     .map_err(|e| e.to_string())?;
 
   let list_sql = format!(
-    "SELECT id, item_name, purchase_date, department, created_at, updated_at
+    "SELECT id, item_name, purchase_date, department, quantity, notes, created_at, updated_at
      FROM purchase_histories {where_sql}
      ORDER BY purchase_date DESC, created_at DESC
      LIMIT ? OFFSET ?"
@@ -332,20 +360,27 @@ pub fn create_purchase(
   state: State<'_, DbState>,
   input: PurchaseInput,
 ) -> Result<Purchase, String> {
-  validate_fields(&input.item_name, &input.purchase_date, &input.department)?;
+  validate_fields(
+    &input.item_name,
+    &input.purchase_date,
+    &input.department,
+    input.quantity,
+    &input.notes,
+  )?;
   let conn = lock_guard(&state)?;
   let id = Uuid::new_v4().to_string();
   let now = chrono_like_now();
   let item = input.item_name.trim();
   let dept = input.department.trim();
   let date = input.purchase_date.trim();
+  let notes = input.notes.trim();
 
   conn
     .execute(
       "INSERT INTO purchase_histories
-        (id, item_name, purchase_date, department, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-      params![id, item, date, dept, now, now],
+        (id, item_name, purchase_date, department, quantity, notes, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+      params![id, item, date, dept, input.quantity, notes, now, now],
     )
     .map_err(|e| e.to_string())?;
 
@@ -354,6 +389,8 @@ pub fn create_purchase(
     item_name: item.to_string(),
     purchase_date: date.to_string(),
     department: dept.to_string(),
+    quantity: input.quantity,
+    notes: notes.to_string(),
     created_at: now.clone(),
     updated_at: now,
   })
@@ -364,7 +401,13 @@ pub fn update_purchase(
   state: State<'_, DbState>,
   input: PurchaseUpdate,
 ) -> Result<Purchase, String> {
-  validate_fields(&input.item_name, &input.purchase_date, &input.department)?;
+  validate_fields(
+    &input.item_name,
+    &input.purchase_date,
+    &input.department,
+    input.quantity,
+    &input.notes,
+  )?;
   if input.id.trim().is_empty() {
     return Err("대상이 없습니다.".into());
   }
@@ -373,13 +416,15 @@ pub fn update_purchase(
   let item = input.item_name.trim();
   let dept = input.department.trim();
   let date = input.purchase_date.trim();
+  let notes = input.notes.trim();
 
   let changed = conn
     .execute(
       "UPDATE purchase_histories
-       SET item_name = ?1, purchase_date = ?2, department = ?3, updated_at = ?4
-       WHERE id = ?5",
-      params![item, date, dept, now, input.id],
+       SET item_name = ?1, purchase_date = ?2, department = ?3,
+           quantity = ?4, notes = ?5, updated_at = ?6
+       WHERE id = ?7",
+      params![item, date, dept, input.quantity, notes, now, input.id],
     )
     .map_err(|e| e.to_string())?;
   if changed == 0 {
@@ -388,7 +433,7 @@ pub fn update_purchase(
 
   conn
     .query_row(
-      "SELECT id, item_name, purchase_date, department, created_at, updated_at
+      "SELECT id, item_name, purchase_date, department, quantity, notes, created_at, updated_at
        FROM purchase_histories WHERE id = ?1",
       params![input.id],
       map_purchase,
@@ -427,13 +472,15 @@ pub fn export_csv(state: State<'_, DbState>, filter: PurchaseFilter) -> Result<S
   f.page = Some(1);
   f.page_size = Some(5000);
   let list = list_inner(&conn, &f)?;
-  let mut out = String::from("품목,구매일자,사용부서,등록일시\r\n");
+  let mut out = String::from("품목,구매일자,사용부서,갯수,비고,등록일시\r\n");
   for row in list.rows {
     out.push_str(&format!(
-      "{},{},{},{}\r\n",
+      "{},{},{},{},{},{}\r\n",
       csv_escape_cell(&row.item_name),
       csv_escape_cell(&row.purchase_date),
       csv_escape_cell(&row.department),
+      row.quantity,
+      csv_escape_cell(&row.notes),
       csv_escape_cell(&row.created_at),
     ));
   }
@@ -462,7 +509,15 @@ pub fn import_csv(state: State<'_, DbState>, csv_text: String) -> Result<ImportR
     let item = cols[0].trim().trim_start_matches('\'');
     let date = cols[1].trim();
     let dept = cols[2].trim().trim_start_matches('\'');
-    if validate_fields(item, date, dept).is_err() {
+    // 신형식(품목,일자,부서,갯수,비고[,등록일시]) / 구형식(품목,일자,부서[,등록일시])
+    let (quantity, notes) = if cols.len() >= 5 {
+      let qty = cols[3].trim().parse::<i64>().unwrap_or(1);
+      let n = cols[4].trim().trim_start_matches('\'').to_string();
+      (qty, n)
+    } else {
+      (1i64, String::new())
+    };
+    if validate_fields(item, date, dept, quantity, &notes).is_err() {
       skipped += 1;
       continue;
     }
@@ -470,9 +525,9 @@ pub fn import_csv(state: State<'_, DbState>, csv_text: String) -> Result<ImportR
     let now = chrono_like_now();
     match conn.execute(
       "INSERT INTO purchase_histories
-        (id, item_name, purchase_date, department, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-      params![id, item, date, dept, now, now],
+        (id, item_name, purchase_date, department, quantity, notes, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+      params![id, item, date, dept, quantity, notes, now, now],
     ) {
       Ok(_) => imported += 1,
       Err(_) => skipped += 1,
