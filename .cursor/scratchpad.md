@@ -122,10 +122,10 @@
 
 ### 품목 등록 갯수·비고 (0.1.17)
 
-- [ ] **Q1.** `db.rs` schema_version 2 — quantity/notes 컬럼 + ALTER 마이그레이션
-- [ ] **Q2.** `purchases.rs` struct/CRUD/validate/CSV
-- [ ] **Q3.** `App.tsx`/`App.css` 등록·수정·목록 UI
-- [ ] **Q4.** 버전 0.1.17 범프 · tauri:build · 커밋·push · GitHub Release
+- [x] **Q1.** `db.rs` schema_version 2 — quantity/notes 컬럼 + ALTER 마이그레이션
+- [x] **Q2.** `purchases.rs` struct/CRUD/validate/CSV
+- [x] **Q3.** `App.tsx`/`App.css` 등록·수정·목록 UI
+- [x] **Q4.** 버전 0.1.17 범프 · tauri:build · 커밋·push · GitHub Release
 
 ### 품목·부서 드롭다운
 
@@ -154,7 +154,7 @@
 
 ## Project Status Board
 
-- [ ] 구매이력 0.1.17 — 품목 등록 갯수·비고 (진행 중)
+- [x] 구매이력 0.1.17 — 품목 등록 갯수·비고 (커밋 `b302d60` · Release)
 - [x] 구매이력 0.1.16 — 목록 전체 삭제 (커밋·Release)
 - [x] 웹 자산등록 메뉴 + 신규 QR 배정 (`/admin/register`)
 - [x] W2 웹 구매이력·구매통계 제거 배포 (코드 제거됨·빌드 수정 push `18e76ce`+tsconfig)
@@ -176,8 +176,11 @@
 ## Executor's Feedback or Assistance Requests
 
 **Executor (2026-08-11) — 0.1.17 갯수·비고**
-- 작업 시작: schema v2 마이그레이션 + UI + CSV + Release
-- `purchases.rs`/`db.rs`는 전체 재작성 금지(외과적 수정만)
+- 완료: schema v2(`quantity`/`notes`) + UI + CSV + Release
+- 커밋 `b302d60`, Release `purchase-desktop-v0.1.17`
+- 설치: https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.17/purchase-desktop-0.1.17-x64-setup.exe
+- **수동 확인 요청:** 등록 폼에 갯수·비고, 목록 표시, 수정, 기존 DB 업그레이드 후 데이터 유지
+- `purchases.rs`/`db.rs`는 외과적 수정만 적용(전체 재작성 없음)
 
 **Executor (2026-08-10) — 웹 구매이력/구매통계 제거·배포**
 - 메뉴/라우트는 이미 제거됨. 잔여 `purchase-statistics-charts.tsx` 삭제 (`18e76ce`)
