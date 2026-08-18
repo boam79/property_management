@@ -18,6 +18,6 @@ GitHub Releases API와 교차해 더 높은 `purchase-desktop-v*` 버전을 채�
 
 ## 현재
 
-- 최신: **0.1.17** (`purchase-desktop-v0.1.17`)
-- Release: https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.17
-- 수동 설치: https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.17/purchase-desktop-0.1.17-x64-setup.exe
+- 최신: **0.1.18** (`purchase-desktop-v0.1.18`)
+- Release: https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.18
+- 수동 설치: https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.18/purchase-desktop-0.1.18-x64-setup.exe

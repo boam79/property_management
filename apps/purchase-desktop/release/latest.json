@@ -1,9 +1,14 @@
 {
-  "version": "0.1.17",
-  "notes": "품목 등록 시 갯수·비고 입력",
-  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.17/purchase-desktop-0.1.17-x64-setup.exe",
-  "publishedAt": "2026-08-11",
+  "version": "0.1.18",
+  "notes": "A4 반출 목록·반출 통계 탭 (구매와 분리)",
+  "url": "https://github.com/boam79/property_management/releases/download/purchase-desktop-v0.1.18/purchase-desktop-0.1.18-x64-setup.exe",
+  "publishedAt": "2026-08-18",
   "history": [
+    {
+      "version": "0.1.18",
+      "date": "2026-08-18",
+      "notes": "A4 반출 목록·반출 통계 탭 (구매와 분리)"
+    },
     {
       "version": "0.1.17",
       "date": "2026-08-11",

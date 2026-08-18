@@ -16,7 +16,8 @@ import {
 } from "recharts";
 import "./App.css";
 
-type Tab = "list" | "stats" | "settings";
+type Area = "purchase" | "issue" | "settings";
+type SubTab = "list" | "stats";
 
 type Purchase = {
   id: string;
@@ -39,6 +40,53 @@ type ListResult = {
 type PurchaseOptions = {
   items: string[];
   departments: string[];
+};
+
+type Issue = {
+  id: string;
+  item_name: string;
+  issue_date: string;
+  department: string;
+  quantity: number;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type IssueListResult = {
+  rows: Issue[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+type IssueOptions = {
+  departments: string[];
+};
+
+type IssueDeptCycle = {
+  department: string;
+  last_date: string;
+  days_since: number;
+  issue_count: number;
+  total_quantity: number;
+  avg_cycle_days: number | null;
+};
+
+type IssueStatPoint = { key: string; count: number; quantity: number };
+type IssueMonthDept = { month: string; department: string; quantity: number };
+type IssueStats = {
+  total: number;
+  total_quantity: number;
+  this_month: number;
+  this_month_quantity: number;
+  last_month: number;
+  last_month_quantity: number;
+  unique_departments: number;
+  by_month: IssueStatPoint[];
+  by_dept: IssueStatPoint[];
+  by_month_dept: IssueMonthDept[];
+  dept_cycles: IssueDeptCycle[];
 };
 
 type AuthStatus = { enabled: boolean; unlocked: boolean };
@@ -87,6 +135,7 @@ type UpdateCheckResult = {
 
 /** 서버 조회 실패 시에도 보이는 요약 히스토리 (릴리즈 시 함께 갱신) */
 const FALLBACK_HISTORY: VersionHistoryEntry[] = [
+  { version: "0.1.18", date: "2026-08-18", notes: "A4 반출 목록·반출 통계 탭 (구매와 분리)" },
   { version: "0.1.17", date: "2026-08-11", notes: "품목 등록 시 갯수·비고 입력" },
   { version: "0.1.16", date: "2026-08-11", notes: "구매 목록 전체 삭제" },
   { version: "0.1.15", date: "2026-08-08", notes: "검색 필터 초기화·선택 후 다시 수정 가능" },
@@ -125,6 +174,20 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function issueMonthDeptStacked(stats: IssueStats) {
+  const months = Array.from(new Set(stats.by_month_dept.map((r) => r.month))).sort();
+  return months.map((month) => {
+    const row: Record<string, string | number> = { name: month.slice(2) };
+    for (const d of stats.by_dept) {
+      row[d.key] = 0;
+    }
+    for (const r of stats.by_month_dept) {
+      if (r.month === month) row[r.department] = r.quantity;
+    }
+    return row;
+  });
+}
+
 function monthDeptStacked(stats: Stats) {
   const months = Array.from(new Set(stats.by_month_dept.map((r) => r.month))).sort();
   return months.map((month) => {
@@ -140,7 +203,8 @@ function monthDeptStacked(stats: Stats) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("list");
+  const [area, setArea] = useState<Area>("purchase");
+  const [subTab, setSubTab] = useState<SubTab>("list");
   const [auth, setAuth] = useState<AuthStatus | null>(null);
   const [authError, setAuthError] = useState("");
   const [unlockPw, setUnlockPw] = useState("");
@@ -162,6 +226,20 @@ export default function App() {
   const [options, setOptions] = useState<PurchaseOptions>({ items: [], departments: [] });
 
   const [stats, setStats] = useState<Stats | null>(null);
+
+  const [issueDept, setIssueDept] = useState("");
+  const [issueDate, setIssueDate] = useState(today());
+  const [issueQty, setIssueQty] = useState(1);
+  const [issueNotes, setIssueNotes] = useState("");
+  const [issueEditing, setIssueEditing] = useState<Issue | null>(null);
+  const [issueDepartmentFilter, setIssueDepartmentFilter] = useState("");
+  const [issueFrom, setIssueFrom] = useState("");
+  const [issueTo, setIssueTo] = useState("");
+  const [issuePage, setIssuePage] = useState(1);
+  const [issueList, setIssueList] = useState<IssueListResult | null>(null);
+  const [issueOptions, setIssueOptions] = useState<IssueOptions>({ departments: [] });
+  const [issueStats, setIssueStats] = useState<IssueStats | null>(null);
+  const issueStatsRef = useRef<HTMLDivElement | null>(null);
 
   const [pwEnabled, setPwEnabled] = useState(false);
   const [newPw, setNewPw] = useState("");
@@ -186,6 +264,17 @@ export default function App() {
     [q, department, from, to, page]
   );
 
+  const issueFilter = useMemo(
+    () => ({
+      department: issueDepartmentFilter || null,
+      from: issueFrom || null,
+      to: issueTo || null,
+      page: issuePage,
+      page_size: 50,
+    }),
+    [issueDepartmentFilter, issueFrom, issueTo, issuePage]
+  );
+
   const refreshAuth = useCallback(async () => {
     const status = await invoke<AuthStatus>("get_auth_status");
     setAuth(status);
@@ -207,6 +296,21 @@ export default function App() {
     setStats(result);
   }, []);
 
+  const refreshIssueList = useCallback(async () => {
+    const result = await invoke<IssueListResult>("list_issues", { filter: issueFilter });
+    setIssueList(result);
+  }, [issueFilter]);
+
+  const refreshIssueOptions = useCallback(async () => {
+    const result = await invoke<IssueOptions>("list_issue_options");
+    setIssueOptions(result);
+  }, []);
+
+  const refreshIssueStats = useCallback(async () => {
+    const result = await invoke<IssueStats>("get_issue_stats");
+    setIssueStats(result);
+  }, []);
+
   useEffect(() => {
     if (!isTauri()) {
       setAuthError("Tauri 앱에서 실행하세요 (npm run tauri:dev)");
@@ -224,12 +328,26 @@ export default function App() {
 
   useEffect(() => {
     if (!auth?.unlocked) return;
-    if (tab === "list") {
+    if (area === "purchase" && subTab === "list") {
       Promise.all([refreshList(), refreshOptions()]).catch((e) => setMessage(String(e)));
-    } else if (tab === "stats") {
+    } else if (area === "purchase" && subTab === "stats") {
       refreshStats().catch((e) => setMessage(String(e)));
+    } else if (area === "issue" && subTab === "list") {
+      Promise.all([refreshIssueList(), refreshIssueOptions()]).catch((e) => setMessage(String(e)));
+    } else if (area === "issue" && subTab === "stats") {
+      refreshIssueStats().catch((e) => setMessage(String(e)));
     }
-  }, [auth?.unlocked, tab, refreshList, refreshOptions, refreshStats]);
+  }, [
+    auth?.unlocked,
+    area,
+    subTab,
+    refreshList,
+    refreshOptions,
+    refreshStats,
+    refreshIssueList,
+    refreshIssueOptions,
+    refreshIssueStats,
+  ]);
 
   async function onUnlock(e: FormEvent) {
     e.preventDefault();
@@ -319,7 +437,7 @@ export default function App() {
       setPage(1);
       setMessage(`구매 목록 ${deleted.toLocaleString()}건을 전체 삭제했습니다.`);
       await Promise.all([refreshList(), refreshOptions()]);
-      if (tab === "stats") await refreshStats();
+      if (area === "purchase" && subTab === "stats") await refreshStats();
     } catch (err) {
       setMessage(String(err));
     }
@@ -348,7 +466,91 @@ export default function App() {
       });
       setMessage(`가져오기: ${result.imported}건 성공, ${result.skipped}건 건너뜀`);
       await Promise.all([refreshList(), refreshOptions()]);
-      if (tab === "stats") await refreshStats();
+      if (area === "purchase" && subTab === "stats") await refreshStats();
+    } catch (err) {
+      setMessage(String(err));
+    }
+  }
+
+  async function onCreateIssue(e: FormEvent) {
+    e.preventDefault();
+    setMessage("");
+    try {
+      if (issueEditing) {
+        await invoke("update_issue", {
+          input: {
+            id: issueEditing.id,
+            issue_date: issueDate,
+            department: issueDept,
+            quantity: issueQty,
+            notes: issueNotes,
+          },
+        });
+        setIssueEditing(null);
+        setMessage("반출을 수정했습니다.");
+      } else {
+        await invoke("create_issue", {
+          input: {
+            issue_date: issueDate,
+            department: issueDept,
+            quantity: issueQty,
+            notes: issueNotes,
+          },
+        });
+        setMessage("반출을 등록했습니다.");
+      }
+      setIssueDept("");
+      setIssueQty(1);
+      setIssueNotes("");
+      setIssueDate(today());
+      await Promise.all([refreshIssueList(), refreshIssueOptions()]);
+    } catch (err) {
+      setMessage(String(err));
+    }
+  }
+
+  function resetIssueForm() {
+    setIssueEditing(null);
+    setIssueDept("");
+    setIssueQty(1);
+    setIssueNotes("");
+    setIssueDate(today());
+  }
+
+  async function onDeleteIssue(id: string) {
+    if (!confirm("이 반출 이력을 삭제할까요?")) return;
+    try {
+      await invoke("delete_issue", { id });
+      await Promise.all([refreshIssueList(), refreshIssueOptions()]);
+    } catch (err) {
+      setMessage(String(err));
+    }
+  }
+
+  async function onDeleteAllIssues() {
+    const total = issueList?.total ?? 0;
+    if (
+      !confirm(
+        total > 0
+          ? `반출 목록 전체 ${total.toLocaleString()}건을 삭제할까요?\n구매 목록은 지우지 않습니다.`
+          : "반출 목록 전체를 삭제할까요?\n구매 목록은 지우지 않습니다."
+      )
+    ) {
+      return;
+    }
+    if (!confirm("정말로 반출 전체를 삭제할까요?")) {
+      return;
+    }
+    try {
+      const deleted = await invoke<number>("delete_all_issues");
+      resetIssueForm();
+      setIssueDepartmentFilter("");
+      setIssueFrom("");
+      setIssueTo("");
+      setIssuePage(1);
+      setMessage(`반출 목록 ${deleted.toLocaleString()}건을 전체 삭제했습니다.`);
+      await Promise.all([refreshIssueList(), refreshIssueOptions()]);
+      if (area === "issue" && subTab === "stats") await refreshIssueStats();
     } catch (err) {
       setMessage(String(err));
     }
@@ -385,7 +587,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!isTauri() || tab !== "settings") return;
+    if (!isTauri() || area !== "settings") return;
     void invoke<UpdateCheckResult>("check_for_update")
       .then((result) => {
         setUpdateInfo(result);
@@ -396,7 +598,7 @@ export default function App() {
       .catch(() => {
         /* 설정 진입 시 백그라운드 조회 실패는 무시 — 폴백 히스토리 유지 */
       });
-  }, [tab]);
+  }, [area]);
 
   async function onCheckUpdate() {
     setUpdateBusy(true);
@@ -475,6 +677,34 @@ export default function App() {
     }
   }
 
+  async function onExportIssueStatsImage() {
+    const el = issueStatsRef.current;
+    if (!el) {
+      setMessage("반출 통계 화면을 찾을 수 없습니다.");
+      return;
+    }
+    setExportBusy(true);
+    setMessage("반출 통계 이미지 생성 중…");
+    try {
+      const dataUrl = await toPng(el, {
+        cacheBust: true,
+        pixelRatio: 4,
+        backgroundColor: "#f4f4f5",
+      });
+      const b64 = dataUrl.split(",")[1];
+      if (!b64) throw new Error("이미지 변환 실패");
+      const bin = atob(b64);
+      const bytes = Array.from(bin, (c) => c.charCodeAt(0));
+      const dest = await invoke<string>("default_stats_image_path");
+      const saved = await invoke<string>("write_bytes_file", { path: dest, bytes });
+      setMessage(`반출 통계 이미지를 저장했습니다: ${saved}`);
+    } catch (err) {
+      setMessage(String(err));
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
   if (authError && !auth) {
     return (
       <main className="app center">
@@ -505,6 +735,7 @@ export default function App() {
   }
 
   const totalPages = Math.max(1, Math.ceil((list?.total ?? 0) / (list?.page_size ?? 50)));
+  const issueTotalPages = Math.max(1, Math.ceil((issueList?.total ?? 0) / (issueList?.page_size ?? 50)));
 
   return (
     <main className="app">
@@ -513,25 +744,46 @@ export default function App() {
           <h1>구매이력</h1>
           <p className="muted">로컬 · 오프라인</p>
         </div>
-        <nav className="tabs">
-          <button className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}>
-            목록
-          </button>
-          <button className={tab === "stats" ? "active" : ""} onClick={() => setTab("stats")}>
-            통계
-          </button>
-          <button
-            className={tab === "settings" ? "active" : ""}
-            onClick={() => setTab("settings")}
-          >
-            설정
-          </button>
-        </nav>
+        <div className="nav-stack">
+          <nav className="tabs">
+            <button
+              className={area === "purchase" ? "active" : ""}
+              onClick={() => {
+                setArea("purchase");
+                setSubTab("list");
+              }}
+            >
+              구매
+            </button>
+            <button
+              className={area === "issue" ? "active" : ""}
+              onClick={() => {
+                setArea("issue");
+                setSubTab("list");
+              }}
+            >
+              반출
+            </button>
+            <button className={area === "settings" ? "active" : ""} onClick={() => setArea("settings")}>
+              설정
+            </button>
+          </nav>
+          {area !== "settings" ? (
+            <nav className="tabs subtabs">
+              <button className={subTab === "list" ? "active" : ""} onClick={() => setSubTab("list")}>
+                목록
+              </button>
+              <button className={subTab === "stats" ? "active" : ""} onClick={() => setSubTab("stats")}>
+                통계
+              </button>
+            </nav>
+          ) : null}
+        </div>
       </header>
 
       {message ? <p className="banner">{message}</p> : null}
 
-      {tab === "list" ? (
+      {area === "purchase" && subTab === "list" ? (
         <div className="layout">
           <section className="card">
             <h2>{editing ? "수정" : "등록"}</h2>
@@ -792,7 +1044,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {tab === "stats" && stats ? (
+      {area === "purchase" && subTab === "stats" && stats ? (
         <div className="stats-panel">
           <div className="stats-toolbar">
             <span className="muted">통계 현황</span>
@@ -1029,7 +1281,356 @@ export default function App() {
         </div>
       ) : null}
 
-      {tab === "settings" ? (
+      {area === "issue" && subTab === "list" ? (
+        <div className="layout">
+          <section className="card">
+            <h2>{issueEditing ? "반출 수정" : "반출 등록"}</h2>
+            <p className="muted">품목은 A4로 고정됩니다. 구매 목록과는 따로 저장됩니다.</p>
+            <form className="form grid-issue" onSubmit={onCreateIssue}>
+              <label>
+                부서
+                <input
+                  list="issue-dept-options"
+                  value={issueDept}
+                  maxLength={100}
+                  required
+                  placeholder="선택 또는 입력"
+                  onChange={(e) => setIssueDept(e.target.value)}
+                />
+              </label>
+              <label>
+                반출일
+                <input
+                  type="date"
+                  value={issueDate}
+                  required
+                  onChange={(e) => setIssueDate(e.target.value)}
+                />
+              </label>
+              <label>
+                갯수
+                <input
+                  type="number"
+                  min={1}
+                  max={999999}
+                  step={1}
+                  value={issueQty}
+                  required
+                  onChange={(e) => setIssueQty(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </label>
+              <label className="span-notes">
+                비고
+                <input
+                  value={issueNotes}
+                  maxLength={1000}
+                  placeholder="선택 입력"
+                  onChange={(e) => setIssueNotes(e.target.value)}
+                />
+              </label>
+              <div className="row">
+                <button type="submit">{issueEditing ? "저장" : "등록"}</button>
+                {issueEditing ? (
+                  <button type="button" className="ghost" onClick={resetIssueForm}>
+                    취소
+                  </button>
+                ) : null}
+              </div>
+            </form>
+          </section>
+
+          <section className="card">
+            <h2>검색·필터</h2>
+            <form
+              className="form grid4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setIssuePage(1);
+                void refreshIssueList();
+              }}
+            >
+              <label>
+                부서
+                <input
+                  list="issue-dept-options"
+                  value={issueDepartmentFilter}
+                  onChange={(e) => setIssueDepartmentFilter(e.target.value)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  placeholder="선택 또는 부분일치"
+                  autoComplete="off"
+                />
+              </label>
+              <label>
+                시작일
+                <input type="date" value={issueFrom} onChange={(e) => setIssueFrom(e.target.value)} />
+              </label>
+              <label>
+                종료일
+                <input type="date" value={issueTo} onChange={(e) => setIssueTo(e.target.value)} />
+              </label>
+              <div className="row filter-actions">
+                <button type="submit">적용</button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => {
+                    setIssueDepartmentFilter("");
+                    setIssueFrom("");
+                    setIssueTo("");
+                    setIssuePage(1);
+                    setMessage("반출 검색 필터를 초기화했습니다.");
+                  }}
+                >
+                  초기화
+                </button>
+              </div>
+            </form>
+            <datalist id="issue-dept-options">
+              {issueOptions.departments.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </section>
+
+          <section className="card table-card">
+            <div className="row between">
+              <h2>반출 목록</h2>
+              <div className="row">
+                <span className="muted">총 {issueList?.total ?? 0}건</span>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={!issueList || issueList.total === 0}
+                  onClick={() => void onDeleteAllIssues()}
+                >
+                  전체 삭제
+                </button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>반출일</th>
+                  <th>부서</th>
+                  <th>품목</th>
+                  <th>갯수</th>
+                  <th>비고</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {(issueList?.rows ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="muted">
+                      반출 이력이 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  issueList!.rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.issue_date}</td>
+                      <td>{row.department}</td>
+                      <td>{row.item_name}</td>
+                      <td>{row.quantity ?? 1}</td>
+                      <td title={row.notes || undefined}>{row.notes || "—"}</td>
+                      <td className="actions">
+                        <button
+                          type="button"
+                          className="ghost"
+                          onClick={() => {
+                            setIssueEditing(row);
+                            setIssueDept(row.department);
+                            setIssueDate(row.issue_date);
+                            setIssueQty(row.quantity ?? 1);
+                            setIssueNotes(row.notes || "");
+                          }}
+                        >
+                          수정
+                        </button>
+                        <button type="button" className="ghost" onClick={() => void onDeleteIssue(row.id)}>
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            <div className="row between">
+              <span className="muted">
+                {issuePage}/{issueTotalPages}
+              </span>
+              <div className="row">
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={issuePage <= 1}
+                  onClick={() => setIssuePage((p) => Math.max(1, p - 1))}
+                >
+                  이전
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={issuePage >= issueTotalPages}
+                  onClick={() => setIssuePage((p) => p + 1)}
+                >
+                  다음
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {area === "issue" && subTab === "stats" && issueStats ? (
+        <div className="stats-panel">
+          <div className="stats-toolbar">
+            <span className="muted">반출 통계 · 부서별 주기</span>
+            <button
+              type="button"
+              className="ghost"
+              disabled={exportBusy}
+              onClick={() => void onExportIssueStatsImage()}
+            >
+              {exportBusy ? "저장 중…" : "통계 이미지 저장"}
+            </button>
+          </div>
+          <div className="stats-fit issue-stats-fit" ref={issueStatsRef}>
+            <div className="kpi-row kpi-row-5">
+              <div className="kpi">
+                <span>전체 건수</span>
+                <strong>{issueStats.total.toLocaleString()}</strong>
+                <em>수량 {issueStats.total_quantity.toLocaleString()}</em>
+              </div>
+              <div className="kpi">
+                <span>이번 달</span>
+                <strong>{issueStats.this_month.toLocaleString()}</strong>
+                <em>수량 {issueStats.this_month_quantity.toLocaleString()}</em>
+              </div>
+              <div className="kpi">
+                <span>지난 달</span>
+                <strong>{issueStats.last_month.toLocaleString()}</strong>
+                <em>수량 {issueStats.last_month_quantity.toLocaleString()}</em>
+              </div>
+              <div className="kpi">
+                <span>부서</span>
+                <strong>{issueStats.unique_departments.toLocaleString()}</strong>
+              </div>
+            </div>
+
+            <div className="stats-mid issue-stats-mid">
+              <section className="card chart">
+                <h2>월별 반출 수량</h2>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={issueStats.by_month.map((d) => ({
+                      name: d.key.slice(2),
+                      quantity: d.quantity,
+                      count: d.count,
+                    }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
+                    <YAxis allowDecimals={false} width={32} tick={{ fontSize: 9 }} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="quantity" name="수량" stroke="#0f766e" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </section>
+              <section className="card chart">
+                <h2>부서별 수량</h2>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    layout="vertical"
+                    data={issueStats.by_dept.map((d) => ({
+                      name: d.key.length > 6 ? `${d.key.slice(0, 5)}…` : d.key,
+                      full: d.key,
+                      quantity: d.quantity,
+                    }))}
+                    margin={{ left: 0, right: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 9 }} />
+                    <YAxis type="category" dataKey="name" width={52} tick={{ fontSize: 9 }} />
+                    <Tooltip
+                      formatter={(value) => [`${value}`, "수량"]}
+                      labelFormatter={(_, payload) =>
+                        (payload?.[0]?.payload as { full?: string })?.full ?? ""
+                      }
+                    />
+                    <Bar dataKey="quantity" fill="#0369a1" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </section>
+              <section className="card chart">
+                <h2>부서×월 수량 (12개월)</h2>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={issueMonthDeptStacked(issueStats)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 8 }} interval="preserveStartEnd" />
+                    <YAxis allowDecimals={false} width={28} tick={{ fontSize: 9 }} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 9 }} iconSize={8} />
+                    {issueStats.by_dept.map((d, i) => (
+                      <Bar
+                        key={d.key}
+                        dataKey={d.key}
+                        stackId="a"
+                        fill={COLORS[i % COLORS.length]}
+                      />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </section>
+            </div>
+
+            <section className="card table-card issue-cycle-card">
+              <h2>부서별 반출 주기</h2>
+              <div className="stats-top-table-body">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>부서</th>
+                      <th>최근 반출일</th>
+                      <th>경과일</th>
+                      <th>평균 주기</th>
+                      <th>건수</th>
+                      <th>누적 수량</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {issueStats.dept_cycles.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="muted">
+                          반출 이력이 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      issueStats.dept_cycles.map((row) => (
+                        <tr key={row.department}>
+                          <td>{row.department}</td>
+                          <td>{row.last_date}</td>
+                          <td>{row.days_since.toLocaleString()}일</td>
+                          <td>
+                            {row.avg_cycle_days != null
+                              ? `${row.avg_cycle_days.toFixed(0)}일`
+                              : "—"}
+                          </td>
+                          <td>{row.issue_count.toLocaleString()}</td>
+                          <td>{row.total_quantity.toLocaleString()}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
+
+      {area === "settings" ? (
         <div className="layout">
           <section className="card">
             <h2>비밀번호 (선택)</h2>
@@ -1104,7 +1705,12 @@ export default function App() {
                       .then(async () => {
                         setMessage("복원 완료");
                         await refreshAuth();
-                        await Promise.all([refreshList(), refreshOptions()]);
+                        await Promise.all([
+                          refreshList(),
+                          refreshOptions(),
+                          refreshIssueList(),
+                          refreshIssueOptions(),
+                        ]);
                       })
                       .catch((err) => setMessage(String(err)));
                   }}
@@ -1118,11 +1724,16 @@ export default function App() {
           <section className="card">
             <h2>데이터 삭제</h2>
             <p className="muted">
-              구매 목록을 모두 지웁니다. 삭제 전 DB 백업을 권장합니다.
+              구매 또는 반출만 지웁니다. 서로 섞이지 않습니다. 삭제 전 DB 백업을 권장합니다.
             </p>
-            <button type="button" className="danger" onClick={() => void onDeleteAllPurchases()}>
-              구매 목록 전체 삭제
-            </button>
+            <div className="row">
+              <button type="button" className="danger" onClick={() => void onDeleteAllPurchases()}>
+                구매 목록 전체 삭제
+              </button>
+              <button type="button" className="danger" onClick={() => void onDeleteAllIssues()}>
+                반출 목록 전체 삭제
+              </button>
+            </div>
           </section>
           <section className="card">
             <h2>업데이트</h2>

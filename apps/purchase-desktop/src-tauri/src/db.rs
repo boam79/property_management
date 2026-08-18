@@ -38,6 +38,17 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> Result<bool, S
   Ok(names.iter().any(|n| n == column))
 }
 
+fn table_exists(conn: &Connection, table: &str) -> Result<bool, String> {
+  let n: i64 = conn
+    .query_row(
+      "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?1",
+      rusqlite::params![table],
+      |row| row.get(0),
+    )
+    .map_err(|e| format!("table exists: {e}"))?;
+  Ok(n == 1)
+}
+
 fn migrate_schema(conn: &Connection) -> Result<(), String> {
   if !column_exists(conn, "purchase_histories", "quantity")? {
     conn
@@ -55,10 +66,37 @@ fn migrate_schema(conn: &Connection) -> Result<(), String> {
       )
       .map_err(|e| format!("add notes: {e}"))?;
   }
+  if !table_exists(conn, "paper_issues")? {
+    conn
+      .execute_batch(
+        r#"
+        CREATE TABLE paper_issues (
+          id TEXT PRIMARY KEY NOT NULL,
+          item_name TEXT NOT NULL DEFAULT 'A4'
+            CHECK (length(trim(item_name)) > 0 AND length(item_name) <= 200),
+          issue_date TEXT NOT NULL
+            CHECK (length(issue_date) = 10),
+          department TEXT NOT NULL
+            CHECK (length(trim(department)) > 0 AND length(department) <= 100),
+          quantity INTEGER NOT NULL DEFAULT 1
+            CHECK (quantity >= 1 AND quantity <= 999999),
+          notes TEXT NOT NULL DEFAULT ''
+            CHECK (length(notes) <= 1000),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS paper_issues_issue_date_idx
+          ON paper_issues (issue_date DESC);
+        CREATE INDEX IF NOT EXISTS paper_issues_department_idx
+          ON paper_issues (department);
+        "#,
+      )
+      .map_err(|e| format!("create paper_issues: {e}"))?;
+  }
   conn
     .execute(
-      "INSERT INTO app_meta (key, value) VALUES ('schema_version', '2')
-       ON CONFLICT(key) DO UPDATE SET value = '2'",
+      "INSERT INTO app_meta (key, value) VALUES ('schema_version', '3')
+       ON CONFLICT(key) DO UPDATE SET value = '3'",
       [],
     )
     .map_err(|e| format!("schema_version: {e}"))?;
@@ -101,6 +139,28 @@ pub fn open_and_migrate(path: &Path) -> Result<Connection, String> {
 
       CREATE INDEX IF NOT EXISTS purchase_histories_item_name_idx
         ON purchase_histories (item_name);
+
+      CREATE TABLE IF NOT EXISTS paper_issues (
+        id TEXT PRIMARY KEY NOT NULL,
+        item_name TEXT NOT NULL DEFAULT 'A4'
+          CHECK (length(trim(item_name)) > 0 AND length(item_name) <= 200),
+        issue_date TEXT NOT NULL
+          CHECK (length(issue_date) = 10),
+        department TEXT NOT NULL
+          CHECK (length(trim(department)) > 0 AND length(department) <= 100),
+        quantity INTEGER NOT NULL DEFAULT 1
+          CHECK (quantity >= 1 AND quantity <= 999999),
+        notes TEXT NOT NULL DEFAULT ''
+          CHECK (length(notes) <= 1000),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS paper_issues_issue_date_idx
+        ON paper_issues (issue_date DESC);
+
+      CREATE INDEX IF NOT EXISTS paper_issues_department_idx
+        ON paper_issues (department);
 
       INSERT INTO app_meta (key, value)
       VALUES ('schema_version', '1')
@@ -189,8 +249,19 @@ mod tests {
 
     assert!(path.exists());
     assert!(info.table_ok);
-    assert_eq!(info.schema_version, 2);
+    assert_eq!(info.schema_version, 3);
     assert_eq!(info.row_count, 0);
+    let issues_ok: i64 = state
+      .conn
+      .lock()
+      .unwrap()
+      .query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='paper_issues'",
+        [],
+        |row| row.get(0),
+      )
+      .unwrap();
+    assert_eq!(issues_ok, 1);
 
     let _ = std::fs::remove_dir_all(dir);
   }

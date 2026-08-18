@@ -3,7 +3,19 @@
 앱 업데이트 확인은 `latest.json`을 사용합니다.  
 설치 파일·태그: [GitHub Releases](https://github.com/boam79/property_management/releases?q=purchase-desktop)
 
-현재 최신: **0.1.17** (`purchase-desktop-v0.1.17`)
+현재 최신: **0.1.18** (`purchase-desktop-v0.1.18`)
+
+---
+
+## 0.1.18 — 2026-08-18
+
+- **GitHub Release:** [purchase-desktop-v0.1.18](https://github.com/boam79/property_management/releases/tag/purchase-desktop-v0.1.18)
+- **설치파일:** `purchase-desktop-0.1.18-x64-setup.exe`
+- **변경 요약**
+  - 상단을 **구매 / 반출 / 설정**으로 묶고, 구매·반출 각각 **목록·통계**
+  - A4 반출은 구매와 **별도 등록** (품목 A4 고정)
+  - 반출 통계: 부서별 최근일·경과일·평균 주기·수량, 월별 차트
+  - 기존 DB는 schema_version **3** (`paper_issues`)로 자동 마이그레이션
 
 ---
 

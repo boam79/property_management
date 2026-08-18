@@ -307,7 +307,7 @@ fn require_unlocked(conn: &Connection) -> Result<(), String> {
   Ok(())
 }
 
-fn lock_guard<'a>(state: &'a State<'_, DbState>) -> Result<MutexGuard<'a, Connection>, String> {
+pub(crate) fn lock_guard<'a>(state: &'a State<'_, DbState>) -> Result<MutexGuard<'a, Connection>, String> {
   let conn = state.conn.lock().map_err(|e| e.to_string())?;
   require_unlocked(&conn)?;
   Ok(conn)

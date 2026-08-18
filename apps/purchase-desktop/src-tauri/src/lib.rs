@@ -1,8 +1,13 @@
 mod db;
+mod issues;
 mod purchases;
 mod update;
 
 use db::{get_db_info, init_db};
+use issues::{
+  create_issue, delete_all_issues, delete_issue, get_issue_stats, list_issue_options, list_issues,
+  update_issue,
+};
 use purchases::{
   backup_db, create_purchase, default_backup_path, default_stats_image_path, delete_all_purchases,
   delete_purchase, export_csv, get_auth_status, get_stats, import_csv, list_purchase_options,
@@ -41,6 +46,13 @@ pub fn run() {
       export_csv,
       import_csv,
       get_stats,
+      list_issues,
+      list_issue_options,
+      create_issue,
+      update_issue,
+      delete_issue,
+      delete_all_issues,
+      get_issue_stats,
       get_auth_status,
       set_password_enabled,
       unlock,
