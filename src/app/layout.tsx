@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     capable: true,
     title: "QR자산",
   },
+};
+
+export const viewport: Viewport = {
   themeColor: "#18181b",
 };
 

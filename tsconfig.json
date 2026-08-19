@@ -33,6 +33,7 @@
   "exclude": [
     "node_modules",
     "apps",
+    "**/*.test.ts",
     ".tmp-ab",
     ".tmp-unpack-test",
     ".unpack-test",

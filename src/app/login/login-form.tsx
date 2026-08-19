@@ -21,10 +21,14 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
     setLoading(true);
 
     try {
+      // 붙여넣기·자동완성으로 섞이는 앞뒤 공백 제거(이메일은 대소문자 무관하므로 소문자화).
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
+
       const supabase = createClient();
       const { data, error: signError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: normalizedEmail,
+        password: normalizedPassword,
       });
 
       if (signError || !data.user) {
