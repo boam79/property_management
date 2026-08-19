@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Out-of-scope of the web app lint: standalone desktop app and deploy tooling.
+    "apps/**",
+    "deploy-bundle/**",
   ]),
 ]);
 

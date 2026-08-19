@@ -1,9 +1,6 @@
 /**
  * Open-redirect 회귀 방지 (로컬 단위 검증)
  */
-import { createRequire } from "module";
-import { pathToFileURL } from "url";
-import { register } from "node:module";
 
 // Plain reimplementation mirroring src/lib/redirect.ts for Node without TS loader
 function isSafeRedirectPath(path) {
